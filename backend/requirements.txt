@@ -1,0 +1,23 @@
+# Core dependencies
+Flask==2.3.3
+Flask-CORS==4.0.0
+python-dotenv==1.0.0
+
+# Supabase
+supabase==2.0.2
+
+# Auth & JWT
+PyJWT==2.8.0
+
+# GitHub API
+PyGithub==1.59.1
+
+# HTTP requests
+requests==2.31.0
+
+# CV parsing dependencies
+PyPDF2==3.0.1
+python-docx==1.1.0
+
+# Date handling
+python-dateutil==2.8.2

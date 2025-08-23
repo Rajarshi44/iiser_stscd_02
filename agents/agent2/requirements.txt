@@ -1,0 +1,14 @@
+# Core AI dependencies
+groq>=0.4.0
+langchain-groq>=0.3.0
+
+# LangChain core
+langchain>=0.1.0
+langchain-community>=0.0.10
+
+# GitHub API
+PyGithub>=1.59.0
+
+# Core utilities
+python-dotenv>=1.0.0
+requests>=2.31.0 

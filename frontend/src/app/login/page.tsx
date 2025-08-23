@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthCard } from "@/components/auth/auth-card";
+import Plasma from "@/components/plasma";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,15 +35,33 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat auth-background">
-      <AuthCard
-        isLoading={isLoading}
-        email={email}
-        setEmail={setEmail}
-        onSignUp={handleSignUp}
-        onSocialLogin={handleSocialLogin}
-      />
-      <Toaster />
+    <div className="relative min-h-screen bg-black overflow-hidden">
+      {/* Plasma Background */}
+      <div className="absolute inset-0 z-0">
+        <Plasma
+          color="#8b5cf6"
+          speed={1.7}
+          direction="forward"
+          scale={1.9}
+          opacity={0.8}
+          mouseInteractive={true}
+        />
+      </div>
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20 z-10" />
+
+      {/* Main Content */}
+      <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
+        <AuthCard
+          isLoading={isLoading}
+          email={email}
+          setEmail={setEmail}
+          onSignUp={handleSignUp}
+          onSocialLogin={handleSocialLogin}
+        />
+        <Toaster />
+      </div>
     </div>
   );
 }

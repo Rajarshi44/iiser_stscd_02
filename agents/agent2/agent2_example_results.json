@@ -1,0 +1,366 @@
+{
+  "roadmap": {
+    "user_id": "mock_user",
+    "current_level": 2,
+    "target_role": "software_engineer",
+    "milestones": [
+      {
+        "title": "Foundation Skills",
+        "description": "Build core programming fundamentals",
+        "skills_covered": [
+          "Python",
+          "Git",
+          "Basic Algorithms"
+        ],
+        "difficulty": "beginner",
+        "estimated_time": "4-6 weeks",
+        "resources": [
+          "Python.org",
+          "GitHub Learning Lab",
+          "LeetCode"
+        ],
+        "prerequisites": [],
+        "completion_criteria": [
+          "Complete 10 coding challenges",
+          "Build a simple project"
+        ]
+      },
+      {
+        "title": "Web Development Basics",
+        "description": "Learn HTML, CSS, and JavaScript",
+        "skills_covered": [
+          "HTML",
+          "CSS",
+          "JavaScript"
+        ],
+        "difficulty": "beginner",
+        "estimated_time": "6-8 weeks",
+        "resources": [
+          "MDN Web Docs",
+          "freeCodeCamp",
+          "Codecademy"
+        ],
+        "prerequisites": [
+          "Basic Programming"
+        ],
+        "completion_criteria": [
+          "Build a responsive website",
+          "Complete a JavaScript project"
+        ]
+      }
+    ],
+    "total_duration": "10-14 weeks",
+    "difficulty_curve": "gradual",
+    "success_metrics": [
+      "Complete all milestones",
+      "Build portfolio projects",
+      "Pass skill assessments"
+    ]
+  },
+  "project": {
+    "name": "weather-dashboard-2",
+    "description": "A Weather Dashboard project to practice JavaScript, React, Node.js",
+    "tech_stack": [
+      "React",
+      "Node.js",
+      "OpenWeather API"
+    ],
+    "difficulty_level": "beginner",
+    "estimated_time": "4-6 weeks",
+    "learning_objectives": [
+      "Master JavaScript",
+      "Master React",
+      "Master Node.js"
+    ],
+    "target_audience": "Level 2 developers",
+    "setup_instructions": "Follow the README.md for setup instructions"
+  },
+  "learning_path": {
+    "user_id": "user123",
+    "created_at": "2025-08-23T20:19:19.716200",
+    "roadmap": {
+      "user_id": "mock_user",
+      "current_level": 2,
+      "target_role": "software_engineer",
+      "milestones": [
+        {
+          "title": "Foundation Skills",
+          "description": "Build core programming fundamentals",
+          "skills_covered": [
+            "Python",
+            "Git",
+            "Basic Algorithms"
+          ],
+          "difficulty": "beginner",
+          "estimated_time": "4-6 weeks",
+          "resources": [
+            "Python.org",
+            "GitHub Learning Lab",
+            "LeetCode"
+          ],
+          "prerequisites": [],
+          "completion_criteria": [
+            "Complete 10 coding challenges",
+            "Build a simple project"
+          ]
+        },
+        {
+          "title": "Web Development Basics",
+          "description": "Learn HTML, CSS, and JavaScript",
+          "skills_covered": [
+            "HTML",
+            "CSS",
+            "JavaScript"
+          ],
+          "difficulty": "beginner",
+          "estimated_time": "6-8 weeks",
+          "resources": [
+            "MDN Web Docs",
+            "freeCodeCamp",
+            "Codecademy"
+          ],
+          "prerequisites": [
+            "Basic Programming"
+          ],
+          "completion_criteria": [
+            "Build a responsive website",
+            "Complete a JavaScript project"
+          ]
+        }
+      ],
+      "total_duration": "10-14 weeks",
+      "difficulty_curve": "gradual",
+      "success_metrics": [
+        "Complete all milestones",
+        "Build portfolio projects",
+        "Pass skill assessments"
+      ]
+    },
+    "milestones": [
+      {
+        "id": "milestone_1",
+        "title": "Foundation Skills",
+        "description": "Build core programming fundamentals",
+        "skills_covered": [
+          "Python",
+          "Git",
+          "Basic Algorithms"
+        ],
+        "difficulty": "beginner",
+        "estimated_time": "4-6 weeks",
+        "resources": [
+          "Python.org",
+          "GitHub Learning Lab",
+          "LeetCode"
+        ],
+        "prerequisites": [],
+        "completion_criteria": [
+          "Complete 10 coding challenges",
+          "Build a simple project"
+        ]
+      },
+      {
+        "id": "milestone_2",
+        "title": "Web Development Basics",
+        "description": "Learn HTML, CSS, and JavaScript",
+        "skills_covered": [
+          "HTML",
+          "CSS",
+          "JavaScript"
+        ],
+        "difficulty": "beginner",
+        "estimated_time": "6-8 weeks",
+        "resources": [
+          "MDN Web Docs",
+          "freeCodeCamp",
+          "Codecademy"
+        ],
+        "prerequisites": [
+          "Basic Programming"
+        ],
+        "completion_criteria": [
+          "Build a responsive website",
+          "Complete a JavaScript project"
+        ]
+      }
+    ],
+    "project": {
+      "name": "weather-dashboard-2",
+      "description": "A Weather Dashboard project to practice Python, JavaScript, Git",
+      "tech_stack": [
+        "React",
+        "Node.js",
+        "OpenWeather API"
+      ],
+      "difficulty_level": "beginner",
+      "estimated_time": "4-6 weeks",
+      "learning_objectives": [
+        "Master Python",
+        "Master JavaScript",
+        "Master Git"
+      ],
+      "target_audience": "Level 2 developers",
+      "setup_instructions": "Follow the README.md for setup instructions"
+    },
+    "issues": [
+      {
+        "title": "Setup Project Environment",
+        "description": "Set up the development environment and project structure",
+        "difficulty": "beginner",
+        "estimated_time": "1-2 hours",
+        "skills_required": [
+          "Git",
+          "Package Management"
+        ],
+        "acceptance_criteria": [
+          "Project runs locally",
+          "All dependencies installed"
+        ],
+        "hints": [
+          "Check the README",
+          "Use package manager"
+        ],
+        "resources": [
+          "Official documentation",
+          "Setup guide"
+        ]
+      },
+      {
+        "title": "Implement Core Feature",
+        "description": "Build the main functionality of the application",
+        "difficulty": "beginner",
+        "estimated_time": "4-8 hours",
+        "skills_required": [
+          "React",
+          "Node.js"
+        ],
+        "acceptance_criteria": [
+          "Feature works as expected",
+          "Code follows best practices"
+        ],
+        "hints": [
+          "Start with a simple implementation",
+          "Test frequently"
+        ],
+        "resources": [
+          "API documentation",
+          "Code examples"
+        ]
+      }
+    ],
+    "validation": "{\"compatibility\": \"Good\", \"skill_gaps\": [\"Advanced concepts\"], \"recommendations\": [\"Start simple\", \"Build gradually\"], \"estimated_difficulty\": \"Medium\", \"success_probability\": \"High\"}",
+    "summary": {
+      "total_milestones": 2,
+      "total_issues": 2,
+      "estimated_duration": "10-14 weeks",
+      "difficulty_level": "beginner",
+      "tech_stack_size": 3
+    }
+  },
+  "portfolio": {
+    "user_id": "user123",
+    "project": {
+      "name": "e-commerce-backend-3",
+      "description": "A E-commerce Backend project to practice Python, Web Development",
+      "tech_stack": [
+        "Python",
+        "Django",
+        "PostgreSQL"
+      ],
+      "difficulty_level": "intermediate",
+      "estimated_time": "6-9 weeks",
+      "learning_objectives": [
+        "Master Python",
+        "Master Web Development"
+      ],
+      "target_audience": "Level 3 developers",
+      "setup_instructions": "Follow the README.md for setup instructions"
+    },
+    "issues": [
+      {
+        "title": "Setup Project Environment",
+        "description": "Set up the development environment and project structure",
+        "difficulty": "advanced",
+        "estimated_time": "1-2 hours",
+        "skills_required": [
+          "Git",
+          "Package Management"
+        ],
+        "acceptance_criteria": [
+          "Project runs locally",
+          "All dependencies installed"
+        ],
+        "hints": [
+          "Check the README",
+          "Use package manager"
+        ],
+        "resources": [
+          "Official documentation",
+          "Setup guide"
+        ]
+      },
+      {
+        "title": "Implement Core Feature",
+        "description": "Build the main functionality of the application",
+        "difficulty": "advanced",
+        "estimated_time": "4-8 hours",
+        "skills_required": [
+          "Python",
+          "Django"
+        ],
+        "acceptance_criteria": [
+          "Feature works as expected",
+          "Code follows best practices"
+        ],
+        "hints": [
+          "Start with a simple implementation",
+          "Test frequently"
+        ],
+        "resources": [
+          "API documentation",
+          "Code examples"
+        ]
+      },
+      {
+        "title": "Portfolio Enhancement",
+        "description": "Add portfolio-worthy features to showcase skills",
+        "difficulty": "advanced",
+        "estimated_time": "1-2 weeks",
+        "skills_required": [
+          "Responsive design",
+          "Performance optimization",
+          "Testing coverage",
+          "Documentation",
+          "Deployment setup"
+        ],
+        "acceptance_criteria": [
+          "Project is production-ready",
+          "Includes comprehensive testing",
+          "Has professional documentation",
+          "Deployed to live environment"
+        ],
+        "hints": [
+          "Focus on code quality",
+          "Add performance metrics",
+          "Include user stories",
+          "Showcase best practices"
+        ],
+        "resources": [
+          "Clean Code principles",
+          "Testing best practices",
+          "Deployment guides",
+          "Portfolio examples"
+        ]
+      }
+    ],
+    "portfolio_features": [
+      "Responsive design",
+      "Performance optimization",
+      "Testing coverage",
+      "Documentation",
+      "Deployment setup"
+    ],
+    "estimated_completion": "4-6 weeks",
+    "portfolio_value": "High - showcases advanced skills and best practices"
+  }
+}
