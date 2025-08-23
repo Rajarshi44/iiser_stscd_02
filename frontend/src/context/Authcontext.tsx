@@ -11,6 +11,11 @@ interface User {
   public_repos?: number;
   followers?: number;
   following?: number;
+  id?: number;
+  database_id?: number;
+  is_stored_user?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface AuthState {
@@ -24,6 +29,12 @@ interface AuthContextType extends AuthState {
   loginWithGitHub: () => void;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  apiCall: (endpoint: string, options?: RequestInit) => Promise<Response>;
+  getUserProfile: () => Promise<any>;
+  getUserRepos: () => Promise<any>;
+  getUserContributions: (username: string, period?: string) => Promise<any>;
+  getUserStats: (username: string) => Promise<any>;
+  getUserActivity: (username: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -45,10 +56,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // On mount, try to hydrate session from cookie via demo endpoint
-    refreshSession();
+    // On mount, try to hydrate session from localStorage first, then cookies
+    initializeSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const initializeSession = async () => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      // First check localStorage for persisted session
+      const persistedUser = localStorage.getItem('auth_user');
+      const persistedToken = localStorage.getItem('auth_token');
+      
+      if (persistedUser && persistedToken) {
+        const user = JSON.parse(persistedUser);
+        setState({ 
+          user, 
+          isAuthenticated: true, 
+          isLoading: false, 
+          token: persistedToken 
+        });
+        
+        // Verify the session is still valid
+        await verifySession(persistedToken);
+        return;
+      }
+      
+      // Fallback to cookie-based session
+      await refreshSession();
+    } catch (error) {
+      console.error('Session initialization error:', error);
+      clearSession();
+    }
+  };
+
+  const verifySession = async (token: string) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/demo/api/user`, {
+        credentials: 'include',
+        headers: token.startsWith('Bearer ') ? {
+          'Authorization': token
+        } : {}
+      });
+      
+      if (!res.ok) {
+        clearSession();
+      }
+    } catch (error) {
+      console.error('Session verification failed:', error);
+      clearSession();
+    }
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_token');
+    setState({ user: null, isAuthenticated: false, isLoading: false, token: null });
+  };
+
+  const persistSession = (user: User, token: string) => {
+    localStorage.setItem('auth_user', JSON.stringify(user));
+    localStorage.setItem('auth_token', token);
+    setState({ user, isAuthenticated: true, isLoading: false, token });
+  };
 
   const refreshSession = async () => {
     setState(prev => ({ ...prev, isLoading: true }));
@@ -58,12 +129,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       if (res.ok) {
         const user: User = await res.json();
-        setState({ user, isAuthenticated: true, isLoading: false, token: 'cookie' });
+        // Persist the session for future visits
+        persistSession(user, 'cookie');
       } else {
-        setState({ user: null, isAuthenticated: false, isLoading: false, token: null });
+        clearSession();
       }
-    } catch {
-      setState({ user: null, isAuthenticated: false, isLoading: false, token: null });
+    } catch (error) {
+      console.error('Refresh session error:', error);
+      clearSession();
     }
   };
 
@@ -78,8 +151,91 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch {
       // ignore network errors on logout
     }
-    setState({ user: null, isAuthenticated: false, isLoading: false, token: null });
+    clearSession();
     toast({ title: 'Signed Out', description: 'You have been successfully signed out' });
+  };
+
+  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+
+    // Add authorization header if we have a bearer token
+    if (state.token && state.token !== 'cookie') {
+      headers['Authorization'] = state.token.startsWith('Bearer ') ? state.token : `Bearer ${state.token}`;
+    }
+
+    return fetch(`${BACKEND_URL}${endpoint}`, {
+      credentials: 'include', // Always include cookies for demo endpoints
+      ...options,
+      headers,
+    });
+  };
+
+  const getUserProfile = async () => {
+    try {
+      const response = await apiCall('/demo/api/profile');
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error('Failed to fetch profile');
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      throw error;
+    }
+  };
+
+  const getUserRepos = async () => {
+    try {
+      const response = await apiCall('/demo/api/repos?per_page=10&sort=updated');
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error('Failed to fetch repositories');
+    } catch (error) {
+      console.error('Error fetching user repositories:', error);
+      throw error;
+    }
+  };
+
+  const getUserContributions = async (username: string, period: string = 'year') => {
+    try {
+      const response = await apiCall(`/demo/api/contributions/${username}?period=${period}`);
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error('Failed to fetch contributions');
+    } catch (error) {
+      console.error('Error fetching user contributions:', error);
+      throw error;
+    }
+  };
+
+  const getUserStats = async (username: string) => {
+    try {
+      const response = await apiCall(`/demo/api/stats/${username}`);
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error('Failed to fetch user stats');
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+      throw error;
+    }
+  };
+
+  const getUserActivity = async (username: string) => {
+    try {
+      const response = await apiCall(`/demo/api/activity/${username}`);
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error('Failed to fetch user activity');
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      throw error;
+    }
   };
 
   const contextValue: AuthContextType = {
@@ -87,6 +243,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loginWithGitHub,
     logout,
     refreshSession,
+    apiCall,
+    getUserProfile,
+    getUserRepos,
+    getUserContributions,
+    getUserStats,
+    getUserActivity,
   };
 
   return (

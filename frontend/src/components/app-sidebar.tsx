@@ -14,6 +14,7 @@ import {
   IconSearch,
   IconSettings,
   IconUser,
+  IconChartDots,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/nav-documents";
@@ -51,6 +52,11 @@ const data = {
       title: "Profile",
       url: "/dashboard/profile",
       icon: IconUser,
+    },
+    {
+      title: "Contributions",
+      url: "/contribution-chart",
+      icon: IconChartDots,
     },
   ],
   navClouds: [

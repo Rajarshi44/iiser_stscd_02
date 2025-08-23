@@ -89,6 +89,9 @@ def test_endpoint():
                 "get_user": "/demo/api/user",
                 "get_profile": "/demo/api/profile", 
                 "get_repos": "/demo/api/repos",
+                "get_contributions": "/demo/api/contributions/<username> (GraphQL)",
+                "get_user_stats": "/demo/api/stats/<username>",
+                "get_user_activity": "/demo/api/activity/<username>",
                 "list_users": "/demo/api/users",
                 "logout": "/demo/logout"
             }
@@ -510,7 +513,7 @@ def demo_github_auth():
     params = {
         "client_id": DEMO_CLIENT_ID,
         "redirect_uri": DEMO_REDIRECT_URI,
-        "scope": "user:email repo",
+        "scope": "read:user user:email repo",
         "state": "demo_state_string",
     }
     auth_url = f"https://github.com/login/oauth/authorize?{urlencode(params)}"
@@ -540,11 +543,11 @@ def demo_github_callback():
 
         # Exchange code for access token
         token_data = {
-            "client_id": DEMO_CLIENT_ID,
-            "client_secret": DEMO_CLIENT_SECRET,
-            "code": code,
-            "redirect_uri": DEMO_REDIRECT_URI,
-        }
+        "client_id": DEMO_CLIENT_ID,
+        "client_secret": DEMO_CLIENT_SECRET,
+        "code": code,
+        "redirect_uri": DEMO_REDIRECT_URI,
+    }
 
         headers = {
             "Accept": "application/json",
@@ -552,11 +555,11 @@ def demo_github_callback():
 
         print(f"🔄 Exchanging code for access token...")
         token_response = requests.post(
-            "https://github.com/login/oauth/access_token",
-            data=token_data,
-            headers=headers,
-            timeout=10,
-        )
+        "https://github.com/login/oauth/access_token",
+        data=token_data,
+        headers=headers,
+        timeout=10,
+    )
 
         if token_response.status_code != 200:
             return jsonify({"error": "Failed to exchange code for token"}), 400
@@ -673,9 +676,9 @@ def demo_github_callback():
             json.dumps(user_info),
             max_age=60 * 60 * 24 * 7,  # 7 days
             httponly=False,  # Allow JS access for frontend
-            secure=False,
-            samesite="Lax",
-        )
+        secure=False,
+        samesite="Lax",
+    )
 
         print(f"   Successfully stored user and redirecting to dashboard")
         return response
@@ -708,16 +711,30 @@ def demo_get_user():
             # Remove sensitive data before returning
             user_data.pop("github_access_token", None)
             
+            # Fetch fresh GitHub data if token is available
+            fresh_github_data = {}
+            try:
+                headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+                github_response = requests.get("https://api.github.com/user", headers=headers, timeout=10)
+                if github_response.status_code == 200:
+                    fresh_github_data = github_response.json()
+            except Exception as e:
+                print(f"Warning: Could not fetch fresh GitHub data: {e}")
+            
             # Return user data in GitHub API format for compatibility
             return jsonify({
                 "id": user_data["github_user_id"],
                 "login": user_data["github_username"],
-                "name": user_data.get("github_username"),  # GitHub doesn't always provide real name
+                "name": fresh_github_data.get("name") or user_data.get("github_username"),
                 "email": user_data.get("email", ""),
                 "avatar_url": user_data.get("avatar_url", ""),
-                "public_repos": 0,  # Could be fetched from GitHub API if needed
-                "followers": 0,     # Could be fetched from GitHub API if needed
-                "following": 0,     # Could be fetched from GitHub API if needed
+                "public_repos": fresh_github_data.get("public_repos", 0),
+                "followers": fresh_github_data.get("followers", 0),
+                "following": fresh_github_data.get("following", 0),
+                "bio": fresh_github_data.get("bio", ""),
+                "location": fresh_github_data.get("location", ""),
+                "blog": fresh_github_data.get("blog", ""),
+                "company": fresh_github_data.get("company", ""),
                 "created_at": user_data.get("created_at"),
                 "updated_at": user_data.get("updated_at"),
                 # Additional fields from our User model
@@ -747,13 +764,71 @@ def demo_get_repos():
     if not token:
         return jsonify({"error": "Not authenticated"}), 401
 
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
-    repos_response = requests.get("https://api.github.com/user/repos", headers=headers, timeout=10)
+    try:
+        # Get query parameters for pagination and sorting
+        per_page = min(int(request.args.get("per_page", 30)), 100)  # Max 100
+        sort = request.args.get("sort", "updated")  # updated, created, pushed, full_name
+        direction = request.args.get("direction", "desc")  # asc, desc
 
-    if repos_response.status_code != 200:
-        return jsonify({"error": "Failed to fetch repositories"}), 400
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+        params = {
+            "per_page": per_page,
+            "sort": sort,
+            "direction": direction,
+            "type": "owner"  # Only owned repositories
+        }
+        
+        repos_response = requests.get(
+            "https://api.github.com/user/repos", 
+            headers=headers, 
+            params=params,
+            timeout=10
+        )
 
-    return jsonify(repos_response.json())
+        if repos_response.status_code != 200:
+            return jsonify({"error": "Failed to fetch repositories"}), 400
+
+        repos = repos_response.json()
+        
+        # Enhance repository data with computed fields
+        enhanced_repos = []
+        for repo in repos:
+            enhanced_repo = {
+                "id": repo["id"],
+                "name": repo["name"],
+                "full_name": repo["full_name"],
+                "description": repo.get("description", ""),
+                "html_url": repo["html_url"],
+                "clone_url": repo["clone_url"],
+                "ssh_url": repo["ssh_url"],
+                "language": repo.get("language"),
+                "stargazers_count": repo["stargazers_count"],
+                "watchers_count": repo["watchers_count"],
+                "forks_count": repo["forks_count"],
+                "open_issues_count": repo["open_issues_count"],
+                "size": repo["size"],
+                "default_branch": repo["default_branch"],
+                "private": repo["private"],
+                "fork": repo["fork"],
+                "archived": repo["archived"],
+                "disabled": repo["disabled"],
+                "created_at": repo["created_at"],
+                "updated_at": repo["updated_at"],
+                "pushed_at": repo["pushed_at"],
+                "topics": repo.get("topics", []),
+                "visibility": repo["visibility"],
+                "owner": {
+                    "login": repo["owner"]["login"],
+                    "avatar_url": repo["owner"]["avatar_url"]
+                }
+            }
+            enhanced_repos.append(enhanced_repo)
+
+        return jsonify(enhanced_repos)
+        
+    except Exception as e:
+        print(f"❌ Error fetching repositories: {str(e)}")
+        return jsonify({"error": f"Failed to fetch repositories: {str(e)}"}), 500
 
 
 @bp.route("/demo/api/profile")
@@ -798,6 +873,368 @@ def demo_list_users():
     except Exception as e:
         print(f"❌ Error listing users: {str(e)}")
         return jsonify({"error": f"Failed to list users: {str(e)}"}), 500
+
+@bp.route("/demo/api/contributions/<username>")
+def demo_get_contributions(username):
+    """Get user contribution data using GitHub GraphQL API"""
+    token = request.cookies.get("github_token")
+    if not token:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    # Get time period from query parameters
+    period = request.args.get('period', 'year')  # year, 6months, 3months
+    
+    try:
+        # GitHub GraphQL API for contribution data
+        graphql_query = """
+        query($userName: String!) { 
+          user(login: $userName){
+            contributionsCollection {
+              contributionCalendar {
+                totalContributions
+                weeks {
+                  contributionDays {
+                    contributionCount
+                    date
+                    color
+                  }
+                }
+              }
+            }
+            repositories(first: 20, orderBy: {field: UPDATED_AT, direction: DESC}, ownerAffiliations: OWNER) {
+              nodes {
+                primaryLanguage {
+                  name
+                }
+              }
+            }
+          }
+        }
+        """
+        
+        variables = {"userName": username}
+        
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        payload = {
+            "query": graphql_query,
+            "variables": variables
+        }
+        
+        print(f"🔍 Fetching GitHub GraphQL contribution data for: {username}")
+        
+        response = requests.post(
+            "https://api.github.com/graphql",
+            json=payload,
+            headers=headers,
+            timeout=10
+        )
+        
+        if response.status_code != 200:
+            print(f"❌ GraphQL request failed with status: {response.status_code}")
+            print(f"Response: {response.text}")
+            return jsonify({"error": f"GraphQL request failed: {response.status_code}"}), 400
+        
+        data = response.json()
+        
+        if "errors" in data:
+            print(f"❌ GraphQL errors: {data['errors']}")
+            return jsonify({"error": f"GraphQL errors: {data['errors']}"}), 400
+        
+        # Extract contribution data
+        contribution_calendar = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]
+        total_contributions = contribution_calendar["totalContributions"]
+        weeks_data = contribution_calendar["weeks"]
+        
+        # Process contribution data into flat array
+        contribution_data = []
+        for week in weeks_data:
+            for day in week["contributionDays"]:
+                # Convert GitHub's contribution count to our 0-4 level system
+                count = day["contributionCount"]
+                if count == 0:
+                    level = 0
+                elif count <= 2:
+                    level = 1
+                elif count <= 4:
+                    level = 2
+                elif count <= 6:
+                    level = 3
+                else:
+                    level = 4
+                
+                contribution_data.append({
+                    'date': day["date"],
+                    'count': count,
+                    'level': level,
+                    'color': day.get("color", "#0d1117")  # GitHub's actual color
+                })
+        
+        # Filter by period if not year
+        if period != 'year':
+            from datetime import datetime, timedelta
+            
+            days_map = {
+                '6months': 180,
+                '3months': 90
+            }
+            days_back = days_map.get(period, 365)
+            
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days_back)
+            
+            # Filter contributions to the specified period
+            filtered_data = []
+            filtered_total = 0
+            
+            for day in contribution_data:
+                day_date = datetime.strptime(day['date'], '%Y-%m-%d')
+                if start_date <= day_date <= end_date:
+                    filtered_data.append(day)
+                    filtered_total += day['count']
+            
+            contribution_data = filtered_data
+            total_contributions = filtered_total
+        
+        # Extract language statistics
+        languages = {}
+        repositories = data["data"]["user"]["repositories"]["nodes"]
+        for repo in repositories:
+            if repo["primaryLanguage"]:
+                lang = repo["primaryLanguage"]["name"]
+                languages[lang] = languages.get(lang, 0) + 1
+        
+        # Calculate contribution streaks
+        current_streak = 0
+        longest_streak = 0
+        temp_streak = 0
+        
+        # Sort by date to ensure proper order
+        sorted_contributions = sorted(contribution_data, key=lambda x: x['date'])
+        
+        # Calculate current streak (from most recent day backwards)
+        for day in reversed(sorted_contributions):
+            if day['count'] > 0:
+                temp_streak += 1
+                if current_streak == 0:  # Start counting current streak from the end
+                    current_streak = temp_streak
+            else:
+                if current_streak == 0:  # Still looking for current streak
+                    continue
+                else:  # Current streak ended
+                    break
+        
+        # Calculate longest streak
+        temp_streak = 0
+        for day in sorted_contributions:
+            if day['count'] > 0:
+                temp_streak += 1
+                longest_streak = max(longest_streak, temp_streak)
+            else:
+                temp_streak = 0
+        
+        print(f"✅ Successfully fetched {len(contribution_data)} days of contribution data")
+        print(f"   Total contributions: {total_contributions}")
+        print(f"   Current streak: {current_streak}")
+        print(f"   Longest streak: {longest_streak}")
+        
+        return jsonify({
+            "success": True,
+            "total_contributions": total_contributions,
+            "contribution_data": contribution_data,
+            "current_streak": current_streak,
+            "longest_streak": longest_streak,
+            "languages": languages,
+            "username": username,
+            "source": "graphql"
+        })
+        
+    except Exception as e:
+        print(f"❌ Error fetching contributions: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to fetch contributions: {str(e)}"}), 500
+
+@bp.route("/demo/api/stats/<username>")
+def demo_get_user_stats(username):
+    """Get comprehensive user statistics from GitHub"""
+    token = request.cookies.get("github_token")
+    if not token:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    try:
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+        
+        print(f"🔍 Fetching comprehensive stats for: {username}")
+        
+        # Fetch user data
+        user_response = requests.get(f"https://api.github.com/users/{username}", headers=headers, timeout=10)
+        if user_response.status_code != 200:
+            return jsonify({"error": "Failed to fetch user data"}), 400
+        
+        user_data = user_response.json()
+        
+        # Fetch repositories with detailed information
+        repos_response = requests.get(
+            f"https://api.github.com/users/{username}/repos",
+            headers=headers,
+            params={"per_page": 100, "sort": "updated", "type": "owner"},
+            timeout=10
+        )
+        
+        if repos_response.status_code != 200:
+            return jsonify({"error": "Failed to fetch repositories"}), 400
+        
+        repos = repos_response.json()
+        
+        # Calculate repository statistics
+        total_stars = sum(repo.get("stargazers_count", 0) for repo in repos)
+        total_forks = sum(repo.get("forks_count", 0) for repo in repos)
+        total_watchers = sum(repo.get("watchers_count", 0) for repo in repos)
+        total_issues = sum(repo.get("open_issues_count", 0) for repo in repos)
+        
+        # Language statistics
+        languages = {}
+        for repo in repos:
+            if repo.get("language"):
+                languages[repo["language"]] = languages.get(repo["language"], 0) + 1
+        
+        # Repository type breakdown
+        public_repos = len([r for r in repos if not r.get("private", False)])
+        private_repos = len([r for r in repos if r.get("private", False)])
+        forked_repos = len([r for r in repos if r.get("fork", False)])
+        original_repos = len([r for r in repos if not r.get("fork", False)])
+        
+        # Recent activity (last 30 days)
+        from datetime import datetime, timedelta
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        recent_repos = [
+            r for r in repos 
+            if datetime.strptime(r["updated_at"][:19], "%Y-%m-%dT%H:%M:%S") > thirty_days_ago
+        ]
+        
+        stats = {
+            "user_info": {
+                "login": user_data["login"],
+                "name": user_data.get("name", ""),
+                "bio": user_data.get("bio", ""),
+                "location": user_data.get("location", ""),
+                "company": user_data.get("company", ""),
+                "blog": user_data.get("blog", ""),
+                "email": user_data.get("email", ""),
+                "avatar_url": user_data["avatar_url"],
+                "public_repos": user_data["public_repos"],
+                "followers": user_data["followers"],
+                "following": user_data["following"],
+                "created_at": user_data["created_at"],
+            },
+            "repository_stats": {
+                "total_repositories": len(repos),
+                "public_repositories": public_repos,
+                "private_repositories": private_repos,
+                "forked_repositories": forked_repos,
+                "original_repositories": original_repos,
+                "total_stars": total_stars,
+                "total_forks": total_forks,
+                "total_watchers": total_watchers,
+                "total_open_issues": total_issues,
+                "recent_activity_count": len(recent_repos)
+            },
+            "languages": dict(sorted(languages.items(), key=lambda x: x[1], reverse=True)),
+            "recent_repositories": recent_repos[:10],  # Top 10 recent
+            "top_starred_repositories": sorted(
+                repos, key=lambda r: r.get("stargazers_count", 0), reverse=True
+            )[:10]
+        }
+        
+        print(f"✅ Successfully compiled stats for {username}")
+        
+        return jsonify({
+            "success": True,
+            "username": username,
+            "stats": stats,
+            "generated_at": datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Error fetching user stats: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to fetch user stats: {str(e)}"}), 500
+
+@bp.route("/demo/api/activity/<username>")
+def demo_get_user_activity(username):
+    """Get user's recent GitHub activity"""
+    token = request.cookies.get("github_token")
+    if not token:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    try:
+        headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+        
+        # Fetch recent events
+        events_response = requests.get(
+            f"https://api.github.com/users/{username}/events/public",
+            headers=headers,
+            params={"per_page": 30},
+            timeout=10
+        )
+        
+        if events_response.status_code != 200:
+            return jsonify({"error": "Failed to fetch user activity"}), 400
+        
+        events = events_response.json()
+        
+        # Process and categorize events
+        activity_summary = {
+            "total_events": len(events),
+            "push_events": 0,
+            "create_events": 0,
+            "watch_events": 0,
+            "fork_events": 0,
+            "issue_events": 0,
+            "pull_request_events": 0,
+            "recent_activity": []
+        }
+        
+        for event in events:
+            event_type = event.get("type", "")
+            
+            # Count event types
+            if event_type == "PushEvent":
+                activity_summary["push_events"] += 1
+            elif event_type == "CreateEvent":
+                activity_summary["create_events"] += 1
+            elif event_type == "WatchEvent":
+                activity_summary["watch_events"] += 1
+            elif event_type == "ForkEvent":
+                activity_summary["fork_events"] += 1
+            elif event_type in ["IssuesEvent", "IssueCommentEvent"]:
+                activity_summary["issue_events"] += 1
+            elif event_type in ["PullRequestEvent", "PullRequestReviewEvent"]:
+                activity_summary["pull_request_events"] += 1
+            
+            # Store recent activity details
+            activity_summary["recent_activity"].append({
+                "type": event_type,
+                "repo": event.get("repo", {}).get("name", ""),
+                "created_at": event.get("created_at", ""),
+                "public": event.get("public", True)
+            })
+        
+        return jsonify({
+            "success": True,
+            "username": username,
+            "activity": activity_summary
+        })
+        
+    except Exception as e:
+        print(f"❌ Error fetching user activity: {str(e)}")
+        return jsonify({"error": f"Failed to fetch user activity: {str(e)}"}), 500
 
 @bp.route("/demo/logout")
 def demo_logout():
