@@ -1,0 +1,16 @@
+# CV Analysis Agent Dependencies
+
+# Core dependencies
+python-dotenv>=1.0.0
+google-generativeai>=0.3.0
+langchain>=0.1.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Database dependencies
+supabase>=2.0.0
+psycopg2-binary>=2.9.0
+
+# PDF processing (optional)
+PyPDF2>=3.0.0
+pypdf>=3.0.0
