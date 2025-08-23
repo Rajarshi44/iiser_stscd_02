@@ -52,14 +52,23 @@ export default function AuthPage() {
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20 z-10" />
 
       {/* Main Content */}
-      <div className="relative z-20 min-h-screen flex items-center justify-center p-4">
-        <AuthCard
-          isLoading={isLoading}
-          email={email}
-          setEmail={setEmail}
-          onSignUp={handleSignUp}
-          onSocialLogin={handleSocialLogin}
-        />
+      <div className="relative z-20 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-md mx-auto relative">
+          {/* Subtle Purple Edge Lighting */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-purple-500/30 via-purple-400/40 to-purple-500/30 rounded-[24px] opacity-60 blur-sm"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 via-purple-400/30 to-purple-500/20 rounded-[22px] opacity-40"></div>
+
+          {/* Auth Card Container */}
+          <div className="relative bg-black/70 backdrop-blur-xl border border-white/10 rounded-[20px] shadow-2xl">
+            <AuthCard
+              isLoading={isLoading}
+              email={email}
+              setEmail={setEmail}
+              onSignUp={handleSignUp}
+              onSocialLogin={handleSocialLogin}
+            />
+          </div>
+        </div>
         <Toaster />
       </div>
     </div>
