@@ -4,17 +4,16 @@ import * as React from "react";
 import {
   IconCamera,
   IconChartBar,
-  IconCertificate,
   IconDatabase,
   IconFileAi,
   IconFileDescription,
   IconFolder,
   IconHelp,
   IconInnerShadowTop,
-  IconListDetails,
   IconReport,
   IconSearch,
   IconSettings,
+  IconUser,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/nav-documents";
@@ -39,24 +38,19 @@ const data = {
   },
   navMain: [
     {
-      title: "Active Issue",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
       title: "Leaderboard",
-      url: "#",
+      url: "/dashboard/leaderboard",
       icon: IconChartBar,
     },
     {
-      title: "Current Level",
-      url: "#",
+      title: "Projects",
+      url: "/dashboard/projects",
       icon: IconFolder,
     },
     {
-      title: "Next Skills",
-      url: "#",
-      icon: IconCertificate,
+      title: "Profile",
+      url: "/dashboard/profile",
+      icon: IconUser,
     },
   ],
   navClouds: [
@@ -153,7 +147,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <a href="/dashboard">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Sloop</span>
               </a>
