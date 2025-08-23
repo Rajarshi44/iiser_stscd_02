@@ -11,10 +11,10 @@ export function Toaster() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all ${
+          className={`group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all backdrop-blur-md ${
             toast.variant === "destructive"
-              ? "border-red-500 bg-red-50 text-red-900"
-              : "border-gray-200 bg-white text-gray-900"
+              ? "border-red-500/50 bg-red-950/80 text-red-100"
+              : "border-purple-500/30 bg-slate-950/80 text-white"
           }`}
         >
           <div className="grid gap-1">

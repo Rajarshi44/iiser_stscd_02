@@ -2,16 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { FaGithub } from "react-icons/fa";
+import Link from "next/link";
 import Plasma from "@/components/plasma";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
+import { Highlight } from "@/components/ui/hero-highlight";
 
 const BorderMagicButton = () => {
     return (
-        <button className="relative inline-flex h-12 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
+        <Link href="/login" className="relative inline-flex h-20 overflow-hidden rounded-full p-[2px] focus:outline-none focus:ring-4 focus:ring-slate-400 focus:ring-offset-4 focus:ring-offset-slate-50 transition-all duration-300 hover:scale-110">
             <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-            <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-9 py-5 text-sm font-medium text-white backdrop-blur-3xl">
-                Let's Connect
+            <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-12 py-6 text-xl font-semibold text-white backdrop-blur-3xl gap-4 hover:bg-slate-900 transition-colors duration-300">
+                <FaGithub className="w-8 h-8" />
+                Connect with GitHub
             </span>
-        </button>
+        </Link>
     );
 };
 
@@ -71,35 +76,16 @@ export default function Home() {
             {/* Main Content */}
             <div className="relative z-30 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8">
                 <div className="text-center max-w-4xl mx-auto">
-                    {/* Main Heading */}
+                    {/* Main Heading with Text Generate Effect */}
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="mb-12"
                     >
-                        <motion.h1
-                            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white mb-4 leading-tight tracking-tight font-roboto"
-                            animate={{
-                                backgroundImage: [
-                                    "linear-gradient(45deg, #ffffff, #e5e7eb)",
-                                    "linear-gradient(45deg, #8b5cf6, #3b82f6)",
-                                    "linear-gradient(45deg, #ffffff, #e5e7eb)",
-                                ],
-                            }}
-                            transition={{
-                                duration: 4,
-                                repeat: Infinity,
-                                repeatType: "reverse",
-                            }}
-                            style={{
-                                backgroundClip: "text",
-                                WebkitBackgroundClip: "text",
-                                color: "transparent",
-                            }}
-                        >
-                            What's Stopping You from Making?
-                        </motion.h1>
+                        <div className="text-white text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight tracking-tight font-roboto text-center">
+                            What's <Highlight className="text-white bg-gradient-to-r from-purple-400 to-purple-600 dark:from-purple-400 dark:to-purple-600">Stopping You from Making</Highlight> Today ?
+                        </div>
                     </motion.div>
 
                     {/* Border Magic Button */}
