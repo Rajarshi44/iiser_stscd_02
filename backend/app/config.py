@@ -8,5 +8,5 @@ class Config:
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
     GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
     GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
-    GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:5000/auth/github/callback")
+    GITHUB_REDIRECT_URI = "http://localhost:3000/auth/github/callback"
     JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
