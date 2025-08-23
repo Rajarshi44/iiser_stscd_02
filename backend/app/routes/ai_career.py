@@ -1575,3 +1575,305 @@ def update_learning_progress(current_user_id):
             "error": f"Progress update failed: {str(e)}",
             "details": "Check server logs for more information"
         }), 500 
+
+@bp.route("/api/repository/create-learning", methods=["POST"])
+@token_required
+def create_learning_repository(current_user_id):
+    """Create single learning repository with structured folders based on roadmap"""
+    try:
+        # Get form data
+        target_role = request.form.get('target_role', 'software_engineer')
+        repository_name = request.form.get('repository_name', f"my-learning-journey-{current_user_id}")
+        repository_description = request.form.get('repository_description', f"My journey to become a {target_role.replace('_', ' ').title()} developer.")
+        make_public = request.form.get('make_public', 'false').lower() == 'true'
+        
+        # Get user's current level and skills
+        user_progress = supabase.table("user_progress").select("*").eq("user_id", current_user_id).execute()
+        current_level = user_progress.data[0]["current_level"] if user_progress.data else 1
+        
+        # Get user's GitHub access token
+        user_result = supabase.table("users").select("github_access_token").eq("id", current_user_id).execute()
+        if not user_result.data:
+            return jsonify({"error": "User not found or GitHub token missing"}), 400
+        
+        github_token = user_result.data[0].get("github_access_token")
+        if not github_token:
+            return jsonify({"error": "GitHub access token not found. Please authenticate with GitHub first."}), 400
+        
+        # Generate learning roadmap
+        roadmap_data = ai_service.generate_roadmap(current_level, target_role, user_skills)
+        
+        if not roadmap_data:
+            return jsonify({"error": "Failed to generate learning roadmap"}), 500
+        
+        # Create the main repository
+        repo_data = ai_service.create_github_repository(
+            current_level, target_role, current_user_id
+        )
+        
+        if not repo_data["success"]:
+            return jsonify({"error": "Failed to create main learning repository"}), 500
+        
+        # Create folder structure and content based on roadmap
+        created_folders = create_roadmap_folder_structure(
+            ai_service, 
+            github_token, 
+            repo_data, 
+            roadmap_data
+        )
+        
+        # Create issues for each level/folder
+        created_issues = create_level_based_issues(
+            ai_service,
+            github_token,
+            repo_data,
+            roadmap_data,
+            created_folders
+        )
+        
+        # Store onboarding data
+        onboarding_data = {
+            "user_id": current_user_id,
+            "uploaded_cv_url": None,  # No CV uploaded
+            "target_role": target_role,
+            "chosen_path": "auto_generated",  # Auto-generated based on skills
+            "onboarding_complete": True,
+            "analysis_method": "GitHub Repository Creation"
+        }
+        
+        try:
+            supabase.table("user_onboarding").upsert(onboarding_data).execute()
+        except Exception as e:
+            print(f"Onboarding storage error: {e}")
+        
+        # Store skills analysis
+        skills_analysis_data = {
+            "user_id": current_user_id,
+            "analysis_data": {
+                "skills": user_skills,
+                "skill_analysis": {"skill_gaps": [], "match_percentage": 0}, # No agent for this specific call
+                "roadmap": roadmap_data,
+                "development_level": "Beginner", # Placeholder, will be updated by Agent2
+                "match_percentage": 0
+            },
+            "skill_level": "Beginner", # Placeholder, will be updated by Agent2
+            "strengths": [skill["name"] for skill in user_skills if skill.get("level", 0) >= 4],
+            "growth_areas": [], # Placeholder, will be updated by Agent2
+            "recommended_learning_path": roadmap_data,
+            "expires_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        }
+        
+        try:
+            supabase.table("user_skills_analysis").upsert(skills_analysis_data).execute()
+        except Exception as e:
+            print(f"Skills analysis storage error: {e}")
+        
+        # Store resume data (generated from GitHub)
+        resume_data = {
+            "user_id": current_user_id,
+            "resume_data": {
+                "github_username": "N/A", # No GitHub username for this specific call
+                "extracted_skills": user_skills,
+                "career_goals": [{"title": target_role.replace('_', ' ').title(), "industry": "Technology"}],
+                "analysis_summary": {"current_level": "Beginner", "match_percentage": 0}, # Placeholder
+                "github_metrics": {} # Placeholder
+            },
+            "last_synced": datetime.now(timezone.utc).isoformat()
+        }
+        
+        try:
+            supabase.table("user_resume").upsert(resume_data).execute()
+        except Exception as e:
+            print(f"Resume storage error: {e}")
+        
+        # Initialize user progress based on GitHub assessment
+        progress_data = {
+            "user_id": current_user_id,
+            "current_level": 1, # Placeholder, will be updated by Agent2
+            "xp_points": 0, # Placeholder, will be updated by Agent2
+            "badges": ["Learning Journey Started"],
+            "next_goal": "Complete your first learning milestone" # Placeholder
+        }
+        
+        try:
+            supabase.table("user_progress").upsert(progress_data).execute()
+        except Exception as e:
+            print(f"Progress storage error: {e}")
+        
+        # Log the operation
+        operation_data = {
+            "user_id": current_user_id,
+            "operation_type": "create_learning_repository",
+            "target_repository": repo_data["name"],
+            "input_data": {"target_role": target_role, "repository_name": repository_name},
+            "output_data": {
+                "repository_name": repo_data["name"],
+                "folder_structure": created_folders,
+                "learning_issues": created_issues
+            },
+            "success": True,
+            "ai_model_used": "AI Agent + GitHub API",
+            "execution_time_ms": 10000
+        }
+        
+        try:
+            supabase.table("agent_operations").insert(operation_data).execute()
+        except Exception as e:
+            print(f"Operation logging error: {e}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Learning repository created successfully!",
+            "repository": repo_data,
+            "folder_structure": created_folders,
+            "learning_issues": created_issues,
+            "onboarding": onboarding_data,
+            "next_steps": [
+                "Review your learning roadmap",
+                "Start with your first learning milestone",
+                "Track your progress in the new repository"
+            ]
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"Repository creation failed: {str(e)}"}), 500
+
+def create_roadmap_folder_structure(github_service, token, repo_data, roadmap_data):
+    """Create folder structure based on roadmap levels"""
+    folders_created = []
+    
+    for milestone in roadmap_data.get("milestones", []):
+        level_name = milestone.get("name", "Unknown Level")
+        level_description = milestone.get("description", "")
+        
+        # Create level folder
+        folder_path = f"Level-{level_name.replace(' ', '-')}"
+        
+        # Create README for the level
+        readme_content = f"""# {level_name}
+
+{level_description}
+
+## Learning Objectives
+{chr(10).join([f"- {obj}" for obj in milestone.get("learning_objectives", [])])}
+
+## Skills Covered
+{chr(10).join([f"- {skill}" for skill in milestone.get("skills_covered", [])])}
+
+## Estimated Duration
+{milestone.get("duration", "2-4 weeks")}
+
+## Projects in This Level
+{chr(10).join([f"- {task.get('title', 'Task')}" for task in milestone.get("tasks", [])])}
+"""
+        
+        # Create folder and README using GitHub API
+        github_service.create_file(
+            token=token,
+            owner=repo_data["owner"]["login"],
+            repo_name=repo_data["name"],
+            path=f"{folder_path}/README.md",
+            message=f"Add {level_name} level structure",
+            content=readme_content
+        )
+        
+        # Create subfolders for each task
+        for task in milestone.get("tasks", []):
+            task_folder = f"{folder_path}/{task.get('title', 'Task').replace(' ', '-').lower()}"
+            
+            # Create task README
+            task_readme = f"""# {task.get('title', 'Task')}
+
+{task.get('description', 'Complete this learning task')}
+
+## Skills Required
+{chr(10).join([f"- {skill}" for skill in task.get("skills_required", [])])}
+
+## Acceptance Criteria
+{chr(10).join([f"- {criteria}" for criteria in task.get("acceptance_criteria", [])])}
+
+## Resources
+{chr(10).join([f"- {resource}" for resource in task.get("resources", [])])}
+
+## Estimated Time
+{task.get('estimated_time', '2-4 hours')}
+
+## Difficulty
+{task.get('difficulty', 'Medium')}
+"""
+            
+            github_service.create_file(
+                token=token,
+                owner=repo_data["owner"]["login"],
+                repo_name=repo_data["name"],
+                path=f"{task_folder}/README.md",
+                message=f"Add {task.get('title', 'Task')} structure",
+                content=task_readme
+            )
+            
+            folders_created.append({
+                "level": level_name,
+                "task": task.get('title', 'Task'),
+                "path": task_folder,
+                "difficulty": task.get('difficulty', 'Medium')
+            })
+    
+    return folders_created
+
+def create_level_based_issues(github_service, token, repo_data, roadmap_data, folders):
+    """Create GitHub issues for each level/task"""
+    issues_created = []
+    
+    for folder in folders:
+        # Create issue for each task
+        issue_title = f"🎯 {folder['level']}: {folder['task']}"
+        issue_body = f"""## Learning Task: {folder['task']}
+
+**Level:** {folder['level']}
+**Difficulty:** {folder['difficulty']}
+**Folder Path:** `{folder['path']}`
+
+### Task Description
+Complete the learning task in the `{folder['path']}` folder.
+
+### What to Do
+1. Navigate to the `{folder['path']}` folder
+2. Read the README.md file for requirements
+3. Complete the task according to acceptance criteria
+4. Commit your solution
+5. Create a pull request when ready
+
+### Resources Available
+- Check the README.md in the task folder
+- Review the main roadmap README.md
+- Use the learning objectives as guidance
+
+### Acceptance Criteria
+- [ ] Task completed according to README requirements
+- [ ] Code follows best practices
+- [ ] Documentation updated
+- [ ] Tests passing (if applicable)
+
+**Good luck with your learning journey! 🚀**
+"""
+        
+        issue = github_service.create_issue(
+            token=token,
+            owner=repo_data["owner"]["login"],
+            repo_name=repo_data["name"],
+            title=issue_title,
+            body=issue_body,
+            labels=["learning-task", f"level-{folder['level'].lower()}", f"difficulty-{folder['difficulty'].lower()}"]
+        )
+        
+        if issue:
+            issues_created.append({
+                "title": issue_title,
+                "number": issue.get("number"),
+                "url": issue.get("html_url"),
+                "level": folder['level'],
+                "task": folder['task'],
+                "difficulty": folder['difficulty']
+            })
+    
+    return issues_created 

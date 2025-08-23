@@ -105,3 +105,44 @@ class GitHubIntegration:
         if response.status_code == 201:
             return response.json()
         return None
+
+    def create_file(self, token, owner, repo_name, path, message, content):
+        """Create a file in GitHub repository"""
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        
+        data = {
+            "message": message,
+            "content": content.encode('utf-8').hex()  # Encode content as hex
+        }
+        
+        response = requests.put(
+            f"https://api.github.com/repos/{owner}/{repo_name}/contents/{path}",
+            headers=headers,
+            json=data
+        )
+        
+        return response.json() if response.status_code in [200, 201] else None
+
+    def create_issue(self, token, owner, repo_name, title, body, labels=None):
+        """Create a GitHub issue"""
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        
+        data = {
+            "title": title,
+            "body": body,
+            "labels": labels or []
+        }
+        
+        response = requests.post(
+            f"https://api.github.com/repos/{owner}/{repo_name}/issues",
+            headers=headers,
+            json=data
+        )
+        
+        return response.json() if response.status_code == 201 else None
