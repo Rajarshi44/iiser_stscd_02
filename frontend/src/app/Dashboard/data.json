@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "header": "react-ui-components",
+    "type": "Frontend, Library, TypeScript",
+    "status": "In Progress",
+    "target": "Q1 2025",
+    "limit": "5000 words",
+    "reviewer": "Eddie Lake, Jamik Tashpulatov, Emily Whalen"
+  },
+  {
+    "id": 2,
+    "header": "data-visualization-lib",
+    "type": "Library, Frontend",
+    "status": "Done",
+    "target": "December 2024",
+    "limit": "3000 words",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 3,
+    "header": "api-gateway-service",
+    "type": "Backend, Microservices",
+    "status": "In Progress",
+    "target": "Q2 2025",
+    "limit": "4000 words",
+    "reviewer": "Jamik Tashpulatov, Alex Smith"
+  },
+  {
+    "id": 4,
+    "header": "mobile-app-flutter",
+    "type": "Mobile, Cross-platform, Dart",
+    "status": "In Progress",
+    "target": "March 2025",
+    "limit": "500 words",
+    "reviewer": "Multiple Collaborators"
+  },
+  {
+    "id": 5,
+    "header": "machine-learning-models",
+    "type": "ML/AI, Python, Data Science",
+    "status": "In Progress",
+    "target": "Q1 2025",
+    "limit": "8000 words",
+    "reviewer": "Eddie Lake, Emily Whalen, Dr. Sarah Johnson, Alex Smith"
+  },
+  {
+    "id": 6,
+    "header": "blockchain-implementation",
+    "type": "Blockchain, Cryptocurrency, Solidity",
+    "status": "Done",
+    "target": "Q3 2025",
+    "limit": "6000 words",
+    "reviewer": "Jamik Tashpulatov, Emily Whalen"
+  },
+  {
+    "id": 7,
+    "header": "devops-automation-tools",
+    "type": "DevOps, CI/CD",
+    "status": "In Progress",
+    "target": "Q2 2025",
+    "limit": "2500 words",
+    "reviewer": "Eddie Lake, Jamik Tashpulatov, Tom Wilson"
+  },
+  {
+    "id": 8,
+    "header": "testing-framework-suite",
+    "type": "Testing, Automation, QA, JavaScript",
+    "status": "In Progress",
+    "target": "Q4 2025",
+    "limit": "7000 words",
+    "reviewer": "Eddie Lake, Jamik Tashpulatov, Emily Whalen, Alex Smith, Dr. Sarah Johnson"
+  }
+]
