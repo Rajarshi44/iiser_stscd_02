@@ -6,11 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthCard } from "@/components/auth/auth-card";
 import Plasma from "@/components/plasma";
+import { useAuth } from "@/context/Authcontext";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const { toast } = useToast();
+  const { loginWithGitHub } = useAuth();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +30,10 @@ export default function AuthPage() {
   };
 
   const handleSocialLogin = (provider: string) => {
+    if (provider.toLowerCase() === "github") {
+      loginWithGitHub();
+      return;
+    }
     toast({
       title: `${provider} login`,
       description: `Redirecting to ${provider}...`,

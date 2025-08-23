@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, redirect, session
+from flask import Blueprint, request, jsonify, redirect, session, make_response
 import jwt
 from datetime import datetime, timedelta, timezone
 from ..config import Config
@@ -6,6 +6,9 @@ from ..services.github_service import GitHubIntegration
 from ..services.supabase_client import supabase
 from ..utils.decorators import token_required
 from ..models import User, AIIssue, AIRepository, RepositoryAnalysis, TechRecommendation
+import os
+import requests
+from urllib.parse import urlencode
 
 bp = Blueprint("github", __name__)
 github_integration = GitHubIntegration(
@@ -475,3 +478,123 @@ def get_user_progress(current_user_id):
             })
     except Exception as e:
         return jsonify({"error": f"Failed to fetch user progress: {str(e)}"}), 500
+
+# ------------------------------
+# Simple demo OAuth cookie flow
+# ------------------------------
+
+# Use environment variables with sensible fallbacks for local testing
+DEMO_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "your_client_id_here")
+DEMO_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "your_client_secret_here")
+DEMO_REDIRECT_URI = "http://localhost:5000/demo/callback"
+
+
+@bp.route("/")
+def demo_home():
+    return jsonify({"status": "ok", "service": "github demo oauth"})
+
+
+@bp.route("/demo/auth")
+def demo_github_auth():
+    params = {
+        "client_id": DEMO_CLIENT_ID,
+        "redirect_uri": DEMO_REDIRECT_URI,
+        "scope": "user:email repo",
+        "state": "demo_state_string",
+    }
+    auth_url = f"https://github.com/login/oauth/authorize?{urlencode(params)}"
+    return redirect(auth_url)
+
+
+@bp.route("/demo/callback")
+def demo_github_callback():
+    code = request.args.get("code")
+    state = request.args.get("state")
+
+    if not code:
+        return jsonify({"error": "Authorization code not received"}), 400
+
+    token_data = {
+        "client_id": DEMO_CLIENT_ID,
+        "client_secret": DEMO_CLIENT_SECRET,
+        "code": code,
+        "redirect_uri": DEMO_REDIRECT_URI,
+    }
+
+    headers = {
+        "Accept": "application/json",
+    }
+
+    token_response = requests.post(
+        "https://github.com/login/oauth/access_token",
+        data=token_data,
+        headers=headers,
+        timeout=10,
+    )
+
+    if token_response.status_code != 200:
+        return jsonify({"error": "Failed to exchange code for token"}), 400
+
+    token_info = token_response.json()
+    access_token = token_info.get("access_token")
+
+    if not access_token:
+        return jsonify({"error": "No access token received"}), 400
+
+    # Optional: fetch user to validate token quickly (non-fatal if fails)
+    try:
+        _ = requests.get(
+            "https://api.github.com/user",
+            headers={"Authorization": f"token {access_token}", "Accept": "application/vnd.github+json"},
+            timeout=10,
+        )
+    except Exception:
+        pass
+
+    response = make_response(redirect("http://localhost:3000/test-backend"))
+    response.set_cookie(
+        "github_token",
+        access_token,
+        max_age=60 * 60 * 24 * 7,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+    )
+    return response
+
+
+@bp.route("/demo/api/user")
+def demo_get_user():
+    token = request.cookies.get("github_token")
+    if not token:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+    user_response = requests.get("https://api.github.com/user", headers=headers, timeout=10)
+
+    if user_response.status_code != 200:
+        return jsonify({"error": "Failed to fetch user data"}), 400
+
+    return jsonify(user_response.json())
+
+
+@bp.route("/demo/api/repos")
+def demo_get_repos():
+    token = request.cookies.get("github_token")
+    if not token:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+    repos_response = requests.get("https://api.github.com/user/repos", headers=headers, timeout=10)
+
+    if repos_response.status_code != 200:
+        return jsonify({"error": "Failed to fetch repositories"}), 400
+
+    return jsonify(repos_response.json())
+
+
+@bp.route("/demo/logout")
+def demo_logout():
+    response = make_response(redirect("http://localhost:3000/test-backend"))
+    response.set_cookie("github_token", "", expires=0)
+    return response

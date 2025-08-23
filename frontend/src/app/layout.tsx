@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Roboto } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/context/Authcontext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -85,6 +86,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${roboto.variable}`}>
+      <AuthProvider>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#0a0a0a" />
@@ -97,6 +99,7 @@ export default function RootLayout({
         </div>
         <Toaster />
       </body>
+      </AuthProvider>
     </html>
   );
 }
