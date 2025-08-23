@@ -391,20 +391,37 @@ export function DataTable({
           </SelectTrigger>
         </Select>
         <TabsList className="**:data-[slot=badge]:bg-purple-500/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex bg-black/20 backdrop-blur-lg border-purple-500/20">
-          <TabsTrigger value="outline" className="text-white data-[state=active]:bg-purple-500/30 data-[state=active]:text-white">Public</TabsTrigger>
-          <TabsTrigger value="past-performance" className="text-white data-[state=active]:bg-purple-500/30 data-[state=active]:text-white">Private</TabsTrigger>
+          <TabsTrigger
+            value="outline"
+            className="text-white data-[state=active]:bg-purple-500/30 data-[state=active]:text-white"
+          >
+            Public
+          </TabsTrigger>
+          <TabsTrigger
+            value="past-performance"
+            className="text-white data-[state=active]:bg-purple-500/30 data-[state=active]:text-white"
+          >
+            Private
+          </TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="bg-black/20 backdrop-blur-lg border-purple-500/20 text-white hover:bg-purple-500/20">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-black/20 backdrop-blur-lg border-purple-500/20 text-white hover:bg-purple-500/20"
+              >
                 <IconLayoutColumns />
                 <span className="hidden lg:inline">Customize Columns</span>
                 <span className="lg:hidden">Columns</span>
                 <IconChevronDown />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-black/80 backdrop-blur-lg border-purple-500/20 text-white">
+            <DropdownMenuContent
+              align="end"
+              className="w-56 bg-black/80 backdrop-blur-lg border-purple-500/20 text-white"
+            >
               {table
                 .getAllColumns()
                 .filter(
@@ -448,7 +465,11 @@ export function DataTable({
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       return (
-                        <TableHead key={header.id} colSpan={header.colSpan} className="text-white">
+                        <TableHead
+                          key={header.id}
+                          colSpan={header.colSpan}
+                          className="text-white"
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
@@ -489,7 +510,10 @@ export function DataTable({
           <div className="flex w-full items-center gap-8 lg:w-fit">
             {/* Removed row selection display */}
             <div className="hidden items-center gap-2 lg:flex">
-              <Label htmlFor="rows-per-page" className="text-sm font-medium text-white">
+              <Label
+                htmlFor="rows-per-page"
+                className="text-sm font-medium text-white"
+              >
                 Rows per page
               </Label>
               <Select
@@ -498,14 +522,24 @@ export function DataTable({
                   table.setPageSize(Number(value));
                 }}
               >
-                <SelectTrigger className="w-20 bg-black/20 backdrop-blur-lg border-purple-500/20 text-white" id="rows-per-page">
+                <SelectTrigger
+                  className="w-20 bg-black/20 backdrop-blur-lg border-purple-500/20 text-white"
+                  id="rows-per-page"
+                >
                   <SelectValue
                     placeholder={table.getState().pagination.pageSize}
                   />
                 </SelectTrigger>
-                <SelectContent side="top" className="bg-black/80 backdrop-blur-lg border-purple-500/20 text-white">
+                <SelectContent
+                  side="top"
+                  className="bg-black/80 backdrop-blur-lg border-purple-500/20 text-white"
+                >
                   {[10, 20, 30, 40, 50].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`} className="text-white hover:bg-purple-500/20 focus:bg-purple-500/20">
+                    <SelectItem
+                      key={pageSize}
+                      value={`${pageSize}`}
+                      className="text-white hover:bg-purple-500/20 focus:bg-purple-500/20"
+                    >
                       {pageSize}
                     </SelectItem>
                   ))}

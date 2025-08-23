@@ -35,17 +35,18 @@ const generateContributionData = () => {
   for (let i = 0; i < 365; i++) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
-    
+
     // Generate random contribution count (0-10)
     const count = Math.floor(Math.random() * 11);
-    
+
     contributions.push({
-      date: date.toISOString().split('T')[0],
+      date: date.toISOString().split("T")[0],
       count,
-      level: count === 0 ? 0 : count <= 2 ? 1 : count <= 4 ? 2 : count <= 6 ? 3 : 4
+      level:
+        count === 0 ? 0 : count <= 2 ? 1 : count <= 4 ? 2 : count <= 6 ? 3 : 4,
     });
   }
-  
+
   return contributions;
 };
 
@@ -62,21 +63,21 @@ const groupByWeeks = (data: typeof contributionData): ContributionDay[][] => {
   const weeks: ContributionDay[][] = [];
   const startDate = new Date(data[0].date);
   const startDay = startDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  
+
   // Add empty days at the beginning if the year doesn't start on Sunday
   const week: ContributionDay[] = Array(7).fill(null);
   let currentWeek = week.slice();
-  
+
   data.forEach((contribution, index) => {
     const dayOfWeek = (startDay + index) % 7;
     currentWeek[dayOfWeek] = contribution;
-    
+
     if (dayOfWeek === 6 || index === data.length - 1) {
       weeks.push(currentWeek);
       currentWeek = Array(7).fill(null);
     }
   });
-  
+
   return weeks;
 };
 
@@ -116,8 +117,8 @@ export function ChartAreaInteractive() {
     const monthsToShow = timeRange === "1y" ? 12 : timeRange === "6m" ? 6 : 3;
     const startDate = new Date(now);
     startDate.setMonth(startDate.getMonth() - monthsToShow);
-    
-    return contributionData.filter(item => {
+
+    return contributionData.filter((item) => {
       const itemDate = new Date(item.date);
       return itemDate >= startDate;
     });
@@ -127,10 +128,26 @@ export function ChartAreaInteractive() {
     return groupByWeeks(filteredData);
   }, [filteredData]);
 
-  const totalContributions = filteredData.reduce((sum, day) => sum + day.count, 0);
+  const totalContributions = filteredData.reduce(
+    (sum, day) => sum + day.count,
+    0
+  );
 
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   return (
     <Card className="@container/card bg-black/20 backdrop-blur-lg border-purple-500/20 shadow-xl hover:shadow-purple-500/20 transition-all duration-300">
@@ -138,7 +155,12 @@ export function ChartAreaInteractive() {
         <CardTitle className="text-white">GitHub Contributions</CardTitle>
         <CardDescription className="text-purple-200/80">
           <span className="hidden @[540px]/card:block">
-            {totalContributions} contributions in the last {timeRange === "1y" ? "year" : timeRange === "6m" ? "6 months" : "3 months"}
+            {totalContributions} contributions in the last{" "}
+            {timeRange === "1y"
+              ? "year"
+              : timeRange === "6m"
+              ? "6 months"
+              : "3 months"}
           </span>
           <span className="@[540px]/card:hidden text-purple-200/80">
             {totalContributions} contributions
@@ -183,15 +205,16 @@ export function ChartAreaInteractive() {
           <div className="flex mb-2 text-xs text-purple-200/60">
             <div className="w-8"></div>
             {filteredWeeklyData.map((week, weekIndex) => {
-              const firstDayOfWeek = week.find(day => day !== null);
-              if (!firstDayOfWeek) return <div key={weekIndex} className="w-3 mx-[1px]"></div>;
-              
+              const firstDayOfWeek = week.find((day) => day !== null);
+              if (!firstDayOfWeek)
+                return <div key={weekIndex} className="w-3 mx-[1px]"></div>;
+
               const date = new Date(firstDayOfWeek.date);
               const isFirstWeekOfMonth = date.getDate() <= 7;
-              
+
               return (
                 <div key={weekIndex} className="w-3 mx-[1px] text-center">
-                  {isFirstWeekOfMonth ? months[date.getMonth()] : ''}
+                  {isFirstWeekOfMonth ? months[date.getMonth()] : ""}
                 </div>
               );
             })}
@@ -201,8 +224,11 @@ export function ChartAreaInteractive() {
             {/* Day labels */}
             <div className="flex flex-col text-xs text-purple-200/60 mr-2">
               {days.map((day, index) => (
-                <div key={day} className="h-3 mb-[1px] leading-3 text-right w-6">
-                  {index % 2 === 1 ? day : ''}
+                <div
+                  key={day}
+                  className="h-3 mb-[1px] leading-3 text-right w-6"
+                >
+                  {index % 2 === 1 ? day : ""}
                 </div>
               ))}
             </div>
@@ -215,9 +241,7 @@ export function ChartAreaInteractive() {
                     <div
                       key={`${weekIndex}-${dayIndex}`}
                       className={`w-3 h-3 mb-[1px] mr-[1px] rounded-sm border transition-colors ${
-                        day 
-                          ? getContributionColor(day.level) 
-                          : "bg-transparent"
+                        day ? getContributionColor(day.level) : "bg-transparent"
                       }`}
                       onMouseEnter={() => {
                         if (day) {
@@ -225,7 +249,13 @@ export function ChartAreaInteractive() {
                         }
                       }}
                       onMouseLeave={() => setHoveredDay(null)}
-                      title={day ? `${day.count} contributions on ${new Date(day.date).toLocaleDateString()}` : ''}
+                      title={
+                        day
+                          ? `${day.count} contributions on ${new Date(
+                              day.date
+                            ).toLocaleDateString()}`
+                          : ""
+                      }
                     />
                   ))}
                 </div>
@@ -238,12 +268,13 @@ export function ChartAreaInteractive() {
             <div>
               {hoveredDay ? (
                 <span className="text-white">
-                  {hoveredDay.count} contribution{hoveredDay.count !== 1 ? 's' : ''} on{' '}
-                  {new Date(hoveredDay.date).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
+                  {hoveredDay.count} contribution
+                  {hoveredDay.count !== 1 ? "s" : ""} on{" "}
+                  {new Date(hoveredDay.date).toLocaleDateString("en-US", {
+                    weekday: "short",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
                   })}
                 </span>
               ) : (
@@ -253,10 +284,12 @@ export function ChartAreaInteractive() {
             <div className="flex items-center gap-1">
               <span>Less</span>
               <div className="flex gap-1">
-                {[0, 1, 2, 3, 4].map(level => (
+                {[0, 1, 2, 3, 4].map((level) => (
                   <div
                     key={level}
-                    className={`w-3 h-3 rounded-sm ${getContributionColor(level)}`}
+                    className={`w-3 h-3 rounded-sm ${getContributionColor(
+                      level
+                    )}`}
                   />
                 ))}
               </div>
