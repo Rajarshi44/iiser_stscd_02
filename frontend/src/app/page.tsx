@@ -9,7 +9,7 @@ const BorderMagicButton = () => {
         <button className="relative inline-flex h-12 overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50">
             <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
             <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-slate-950 px-9 py-5 text-sm font-medium text-white backdrop-blur-3xl">
-                Let's Start
+                Let's Connect
             </span>
         </button>
     );
@@ -51,8 +51,8 @@ export default function Home() {
                         key={i}
                         className="absolute w-1 h-1 bg-purple-400/30 rounded-full"
                         animate={{
-                            x: [0, Math.random() * window.innerWidth],
-                            y: [0, Math.random() * window.innerHeight],
+                            x: [0, Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920)],
+                            y: [0, Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080)],
                         }}
                         transition={{
                             duration: Math.random() * 10 + 10,
@@ -61,8 +61,8 @@ export default function Home() {
                             ease: "linear",
                         }}
                         style={{
-                            left: Math.random() * window.innerWidth,
-                            top: Math.random() * window.innerHeight,
+                            left: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+                            top: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 1080),
                         }}
                     />
                 ))}
@@ -79,7 +79,7 @@ export default function Home() {
                         className="mb-12"
                     >
                         <motion.h1
-                            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white mb-4 leading-tight tracking-tight font-sans"
+                            className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white mb-4 leading-tight tracking-tight font-roboto"
                             animate={{
                                 backgroundImage: [
                                     "linear-gradient(45deg, #ffffff, #e5e7eb)",

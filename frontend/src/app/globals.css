@@ -51,3 +51,27 @@ body {
 .animate-glow {
   animation: glow 2s ease-in-out infinite alternate;
 }
+
+/* Auth page background */
+.auth-background {
+  background-image: url('/bg.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  position: relative;
+}
+
+.auth-background::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+/* Alternative simpler background for auth */
+.auth-background-simple {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
+}
