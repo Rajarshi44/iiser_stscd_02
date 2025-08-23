@@ -11,7 +11,6 @@ export function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4 bg-purple-500/30"
         />
         <h1 className="text-base font-medium text-white/90">Overview</h1>
-        
       </div>
     </header>
   );

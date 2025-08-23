@@ -33,7 +33,6 @@ export function NavDocuments({
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}
-       
       </SidebarMenu>
     </SidebarGroup>
   );
