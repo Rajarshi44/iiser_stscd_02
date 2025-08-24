@@ -3,6 +3,10 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/Authcontext'
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { AuroraBackground } from "@/components/ui/aurora-background"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -236,6 +240,304 @@ interface SkillAnalysisResult {
   next_steps: string[]
 }
 
+// Comprehensive skill domain definitions
+interface SkillDomain {
+  id: string;
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  description: string;
+  skills: string[];
+  subdomains: string[];
+  level?: number;
+  expertiseCount?: number;
+}
+
+const SKILL_DOMAINS: SkillDomain[] = [
+  {
+    id: 'frontend',
+    name: 'Frontend Development',
+    icon: Monitor,
+    color: 'blue',
+    description: 'User interface and experience development',
+    skills: ['React', 'Vue', 'Angular', 'TypeScript', 'JavaScript', 'HTML', 'CSS', 'Sass', 'Tailwind', 'Next.js', 'Svelte'],
+    subdomains: ['Web Components', 'Progressive Web Apps', 'Responsive Design', 'Browser APIs', 'State Management']
+  },
+  {
+    id: 'backend',
+    name: 'Backend Development',
+    icon: Server,
+    color: 'green',
+    description: 'Server-side logic and API development',
+    skills: ['Node.js', 'Python', 'Java', 'Go', 'Rust', 'PHP', 'Ruby', 'C#', 'Express', 'FastAPI', 'Django', 'Spring'],
+    subdomains: ['REST APIs', 'GraphQL', 'Microservices', 'Message Queues', 'Caching', 'Authentication']
+  },
+  {
+    id: 'database',
+    name: 'Database & Data',
+    icon: Database,
+    color: 'purple',
+    description: 'Data storage, retrieval, and management',
+    skills: ['PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch', 'SQL', 'NoSQL', 'GraphQL', 'Supabase', 'Firebase'],
+    subdomains: ['Database Design', 'Query Optimization', 'Data Modeling', 'ETL Pipelines', 'Data Warehousing']
+  },
+  {
+    id: 'devops',
+    name: 'DevOps & Infrastructure',
+    icon: Settings,
+    color: 'orange',
+    description: 'Deployment, automation, and infrastructure management',
+    skills: ['Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Terraform', 'Ansible', 'Jenkins', 'GitLab CI', 'GitHub Actions'],
+    subdomains: ['CI/CD', 'Infrastructure as Code', 'Container Orchestration', 'Monitoring', 'Security', 'Automation']
+  },
+  {
+    id: 'cloud',
+    name: 'Cloud Architecture',
+    icon: Cloud,
+    color: 'cyan',
+    description: 'Cloud-native solutions and distributed systems',
+    skills: ['AWS Lambda', 'Azure Functions', 'GCP Functions', 'Serverless', 'API Gateway', 'CloudFormation', 'CloudWatch'],
+    subdomains: ['Serverless Architecture', 'Event-Driven Architecture', 'Cloud Security', 'Cost Optimization', 'Multi-Cloud']
+  },
+  {
+    id: 'ai_ml',
+    name: 'AI & Machine Learning',
+    icon: Brain,
+    color: 'pink',
+    description: 'Artificial intelligence and machine learning development',
+    skills: ['Python', 'TensorFlow', 'PyTorch', 'Scikit-learn', 'Pandas', 'NumPy', 'OpenAI API', 'Hugging Face', 'LangChain'],
+    subdomains: ['Deep Learning', 'Natural Language Processing', 'Computer Vision', 'MLOps', 'Data Science', 'GenAI']
+  },
+  {
+    id: 'mobile',
+    name: 'Mobile Development',
+    icon: Smartphone,
+    color: 'indigo',
+    description: 'Native and cross-platform mobile applications',
+    skills: ['React Native', 'Flutter', 'Swift', 'Kotlin', 'Xamarin', 'Ionic', 'Progressive Web Apps', 'Expo'],
+    subdomains: ['iOS Development', 'Android Development', 'Cross-Platform', 'Mobile UI/UX', 'App Store Optimization']
+  },
+  {
+    id: 'security',
+    name: 'Cybersecurity',
+    icon: Shield,
+    color: 'red',
+    description: 'Application and infrastructure security',
+    skills: ['OAuth', 'JWT', 'SSL/TLS', 'OWASP', 'Penetration Testing', 'Encryption', 'Security Auditing', 'Zero Trust'],
+    subdomains: ['Web Security', 'Network Security', 'Compliance', 'Threat Modeling', 'Incident Response', 'Vulnerability Assessment']
+  },
+  {
+    id: 'blockchain',
+    name: 'Blockchain & Web3',
+    icon: Boxes,
+    color: 'yellow',
+    description: 'Decentralized applications and blockchain technology',
+    skills: ['Solidity', 'Web3.js', 'Ethers.js', 'Smart Contracts', 'Ethereum', 'Solana', 'XMTP', 'Wagmi', 'Move', 'Aptos SDK', 'Petra Wallet', 'DeFi', 'NFTs', 'IPFS'],
+    subdomains: ['Smart Contract Development', 'DApp Development', 'Solana Development', 'Cross-Chain Messaging', 'Web3 Gaming', 'DAO Governance']
+  },
+  {
+    id: 'data_science',
+    name: 'Data Science & Analytics',
+    icon: BarChart3,
+    color: 'emerald',
+    description: 'Data analysis, visualization, and insights',
+    skills: ['Python', 'R', 'Jupyter', 'Matplotlib', 'Plotly', 'D3.js', 'Tableau', 'Power BI', 'Apache Spark', 'Pandas'],
+    subdomains: ['Data Visualization', 'Statistical Analysis', 'Big Data', 'Business Intelligence', 'Predictive Analytics']
+  },
+  {
+    id: 'game_dev',
+    name: 'Game Development',
+    icon: Puzzle,
+    color: 'violet',
+    description: 'Video game design and development',
+    skills: ['Unity', 'Unreal Engine', 'C#', 'C++', 'Godot', 'Blender', 'Game Design', '3D Modeling', 'Pixel Art'],
+    subdomains: ['2D Games', '3D Games', 'Game Physics', 'Game AI', 'VR/AR Development', 'Game Monetization']
+  },
+  {
+    id: 'architecture',
+    name: 'Software Architecture',
+    icon: Layers,
+    color: 'slate',
+    description: 'System design and architectural patterns',
+    skills: ['Design Patterns', 'Microservices', 'Event Sourcing', 'CQRS', 'Domain-Driven Design', 'Clean Architecture', 'SOLID'],
+    subdomains: ['System Design', 'Scalability', 'Performance Optimization', 'Distributed Systems', 'Load Balancing']
+  },
+  {
+    id: 'quality_assurance',
+    name: 'Quality Assurance',
+    icon: CheckCircle,
+    color: 'lime',
+    description: 'Testing, quality control, and process improvement',
+    skills: ['Jest', 'Cypress', 'Selenium', 'TestNG', 'Postman', 'K6', 'Unit Testing', 'Integration Testing', 'E2E Testing'],
+    subdomains: ['Test Automation', 'Performance Testing', 'Security Testing', 'API Testing', 'Test Strategy']
+  },
+  {
+    id: 'product_management',
+    name: 'Product Management',
+    icon: Briefcase,
+    color: 'amber',
+    description: 'Product strategy, roadmapping, and user experience',
+    skills: ['Agile', 'Scrum', 'Product Strategy', 'User Research', 'Analytics', 'A/B Testing', 'Roadmapping', 'Stakeholder Management'],
+    subdomains: ['Product Strategy', 'User Experience', 'Market Research', 'Feature Prioritization', 'Growth Hacking']
+  }
+]
+
+// Helper functions to process comprehensive API data
+const processSkillDomainsFromAPI = (enhancedUserProfile: EnhancedUserProfile | null): SkillDomain[] => {
+  if (!enhancedUserProfile) return SKILL_DOMAINS;
+
+  const processedDomains = SKILL_DOMAINS.map(domain => {
+    let domainLevel = 0;
+    let expertiseCount = 0;
+
+    // Process skills from skills_analysis with enhanced matching
+    if (enhancedUserProfile.platform_data?.skills_analysis?.analysis_data?.skills) {
+      const userSkills = enhancedUserProfile.platform_data.skills_analysis.analysis_data.skills;
+      const domainSkills = userSkills.filter((skill: any) => 
+        domain.skills.some((domainSkill: string) => 
+          domainSkill.toLowerCase().includes(skill.name.toLowerCase()) ||
+          skill.name.toLowerCase().includes(domainSkill.toLowerCase()) ||
+          // Enhanced matching for complex names
+          skill.name.toLowerCase().replace(/[.\-_]/g, '').includes(domainSkill.toLowerCase().replace(/[.\-_]/g, '')) ||
+          domainSkill.toLowerCase().replace(/[.\-_]/g, '').includes(skill.name.toLowerCase().replace(/[.\-_]/g, ''))
+        )
+      );
+      
+      if (domainSkills.length > 0) {
+        domainLevel = Math.round(domainSkills.reduce((sum: number, skill: any) => sum + skill.level, 0) / domainSkills.length);
+        expertiseCount = domainSkills.length;
+      }
+    }
+
+    // Enhance with repository analysis data
+    if (enhancedUserProfile.platform_data?.repository_analyses) {
+      enhancedUserProfile.platform_data.repository_analyses.forEach((analysis: any) => {
+        if (analysis.analysis_data && analysis.analysis_data.technologies) {
+          const technologies = Array.isArray(analysis.analysis_data.technologies) 
+            ? analysis.analysis_data.technologies 
+            : Object.keys(analysis.analysis_data.technologies || {});
+          
+          const matchingTechs = technologies.filter((tech: string) => 
+            domain.skills.some((skill: string) => 
+              skill.toLowerCase().includes(tech.toLowerCase()) ||
+              tech.toLowerCase().includes(skill.toLowerCase())
+            )
+          );
+          
+          if (matchingTechs.length > 0) {
+            expertiseCount += matchingTechs.length;
+            domainLevel = Math.max(domainLevel, Math.min(5, Math.ceil(analysis.overall_score / 20)));
+          }
+        }
+      });
+    }
+
+    // Enhance with tech recommendations
+    if (enhancedUserProfile.platform_data?.tech_recommendations) {
+      enhancedUserProfile.platform_data.tech_recommendations.forEach((rec: any) => {
+        if (rec.recommendations && typeof rec.recommendations === 'object') {
+          const recommendedTechs = Object.keys(rec.recommendations);
+          const matchingTechs = recommendedTechs.filter((tech: string) => 
+            domain.skills.some((skill: string) => 
+              skill.toLowerCase().includes(tech.toLowerCase()) ||
+              tech.toLowerCase().includes(skill.toLowerCase())
+            )
+          );
+          
+          if (matchingTechs.length > 0) {
+            expertiseCount += matchingTechs.length * 0.5; // Weight recommendations lower
+          }
+        }
+      });
+    }
+
+    return {
+      ...domain,
+      level: Math.min(5, domainLevel),
+      expertiseCount: Math.round(expertiseCount)
+    };
+  });
+
+  // Sort by expertise level and count
+  return processedDomains.sort((a, b) => {
+    const aScore = (a.level || 0) * 10 + (a.expertiseCount || 0);
+    const bScore = (b.level || 0) * 10 + (b.expertiseCount || 0);
+    return bScore - aScore;
+  });
+};
+
+const getTechStackFromRepositories = (enhancedUserProfile: EnhancedUserProfile | null): Array<{name: string, count: number, category: string}> => {
+  if (!enhancedUserProfile?.platform_data?.repository_analyses) return [];
+
+  const techStack: Record<string, {count: number, category: string}> = {};
+
+  enhancedUserProfile.platform_data.repository_analyses.forEach((analysis: any) => {
+    if (analysis.analysis_data?.technologies) {
+      const technologies = analysis.analysis_data.technologies;
+      
+      if (Array.isArray(technologies)) {
+        technologies.forEach((tech: string) => {
+          const category = SKILL_DOMAINS.find(domain => 
+            domain.skills.some((skill: string) => 
+              skill.toLowerCase().includes(tech.toLowerCase()) ||
+              tech.toLowerCase().includes(skill.toLowerCase())
+            )
+          )?.name || 'Other';
+          
+          if (!techStack[tech]) {
+            techStack[tech] = { count: 0, category };
+          }
+          techStack[tech].count++;
+        });
+      } else if (typeof technologies === 'object') {
+        Object.entries(technologies).forEach(([tech, usage]: [string, any]) => {
+          const category = SKILL_DOMAINS.find(domain => 
+            domain.skills.some((skill: string) => 
+              skill.toLowerCase().includes(tech.toLowerCase()) ||
+              tech.toLowerCase().includes(skill.toLowerCase())
+            )
+          )?.name || 'Other';
+          
+          if (!techStack[tech]) {
+            techStack[tech] = { count: 0, category };
+          }
+          techStack[tech].count += typeof usage === 'number' ? usage : 1;
+        });
+      }
+    }
+  });
+
+  return Object.entries(techStack)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20); // Top 20 technologies
+};
+
+const getAIExpertiseMetrics = (enhancedUserProfile: EnhancedUserProfile | null) => {
+  if (!enhancedUserProfile?.platform_data) return null;
+
+  const aiIssues = enhancedUserProfile.platform_data.recent_ai_issues || [];
+  const aiRepos = enhancedUserProfile.platform_data.ai_repositories || [];
+  const techRecs = enhancedUserProfile.platform_data.tech_recommendations || [];
+
+  return {
+    totalAIIssues: aiIssues.length,
+    totalAIRepos: aiRepos.length,
+    totalTechRecommendations: techRecs.length,
+    averageComplexity: aiIssues.length > 0 
+      ? aiIssues.reduce((sum: number, issue: any) => {
+          const complexity = issue.complexity === 'high' ? 3 : issue.complexity === 'medium' ? 2 : 1;
+          return sum + complexity;
+        }, 0) / aiIssues.length 
+      : 0,
+    aiGeneratedFiles: aiRepos.reduce((sum: number, repo: any) => sum + (repo.created_files || 0), 0),
+    recentActivity: aiIssues.filter((issue: any) => {
+      const daysSinceCreation = (Date.now() - new Date(issue.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      return daysSinceCreation <= 30;
+    }).length
+  };
+};
+
 interface GitHubAnalysisResult {
   success: boolean
   message: string
@@ -247,9 +549,385 @@ interface GitHubAnalysisResult {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d', '#ffc658', '#ff7c7c']
 const RADIAL_COLORS = ['#8884d8', '#83a6ed', '#8dd1e1', '#d084a6', '#ffb347']
 
+// Helper function to get color classes for Tailwind CSS
+const getColorClasses = (color: string) => {
+  const colorMap: Record<string, any> = {
+    blue: {
+      bg: 'bg-blue-50',
+      bgTo: 'bg-blue-100',
+      border: 'border-blue-200',
+      borderHover: 'border-blue-300',
+      text: 'text-blue-700',
+      textLight: 'text-blue-600',
+      textDark: 'text-blue-800',
+      badgeBg: 'bg-blue-200',
+      badgeText: 'text-blue-800',
+      borderBadge: 'border-blue-300'
+    },
+    green: {
+      bg: 'bg-green-50',
+      bgTo: 'bg-green-100',
+      border: 'border-green-200',
+      borderHover: 'border-green-300',
+      text: 'text-green-700',
+      textLight: 'text-green-600',
+      textDark: 'text-green-800',
+      badgeBg: 'bg-green-200',
+      badgeText: 'text-green-800',
+      borderBadge: 'border-green-300'
+    },
+    purple: {
+      bg: 'bg-purple-50',
+      bgTo: 'bg-purple-100',
+      border: 'border-purple-200',
+      borderHover: 'border-purple-300',
+      text: 'text-purple-700',
+      textLight: 'text-purple-600',
+      textDark: 'text-purple-800',
+      badgeBg: 'bg-purple-200',
+      badgeText: 'text-purple-800',
+      borderBadge: 'border-purple-300'
+    },
+    orange: {
+      bg: 'bg-orange-50',
+      bgTo: 'bg-orange-100',
+      border: 'border-orange-200',
+      borderHover: 'border-orange-300',
+      text: 'text-orange-700',
+      textLight: 'text-orange-600',
+      textDark: 'text-orange-800',
+      badgeBg: 'bg-orange-200',
+      badgeText: 'text-orange-800',
+      borderBadge: 'border-orange-300'
+    },
+    cyan: {
+      bg: 'bg-cyan-50',
+      bgTo: 'bg-cyan-100',
+      border: 'border-cyan-200',
+      borderHover: 'border-cyan-300',
+      text: 'text-cyan-700',
+      textLight: 'text-cyan-600',
+      textDark: 'text-cyan-800',
+      badgeBg: 'bg-cyan-200',
+      badgeText: 'text-cyan-800',
+      borderBadge: 'border-cyan-300'
+    },
+    pink: {
+      bg: 'bg-pink-50',
+      bgTo: 'bg-pink-100',
+      border: 'border-pink-200',
+      borderHover: 'border-pink-300',
+      text: 'text-pink-700',
+      textLight: 'text-pink-600',
+      textDark: 'text-pink-800',
+      badgeBg: 'bg-pink-200',
+      badgeText: 'text-pink-800',
+      borderBadge: 'border-pink-300'
+    },
+    indigo: {
+      bg: 'bg-indigo-50',
+      bgTo: 'bg-indigo-100',
+      border: 'border-indigo-200',
+      borderHover: 'border-indigo-300',
+      text: 'text-indigo-700',
+      textLight: 'text-indigo-600',
+      textDark: 'text-indigo-800',
+      badgeBg: 'bg-indigo-200',
+      badgeText: 'text-indigo-800',
+      borderBadge: 'border-indigo-300'
+    },
+    red: {
+      bg: 'bg-red-50',
+      bgTo: 'bg-red-100',
+      border: 'border-red-200',
+      borderHover: 'border-red-300',
+      text: 'text-red-700',
+      textLight: 'text-red-600',
+      textDark: 'text-red-800',
+      badgeBg: 'bg-red-200',
+      badgeText: 'text-red-800',
+      borderBadge: 'border-red-300'
+    },
+    yellow: {
+      bg: 'bg-yellow-50',
+      bgTo: 'bg-yellow-100',
+      border: 'border-yellow-200',
+      borderHover: 'border-yellow-300',
+      text: 'text-yellow-700',
+      textLight: 'text-yellow-600',
+      textDark: 'text-yellow-800',
+      badgeBg: 'bg-yellow-200',
+      badgeText: 'text-yellow-800',
+      borderBadge: 'border-yellow-300'
+    },
+    emerald: {
+      bg: 'bg-emerald-50',
+      bgTo: 'bg-emerald-100',
+      border: 'border-emerald-200',
+      borderHover: 'border-emerald-300',
+      text: 'text-emerald-700',
+      textLight: 'text-emerald-600',
+      textDark: 'text-emerald-800',
+      badgeBg: 'bg-emerald-200',
+      badgeText: 'text-emerald-800',
+      borderBadge: 'border-emerald-300'
+    },
+    violet: {
+      bg: 'bg-violet-50',
+      bgTo: 'bg-violet-100',
+      border: 'border-violet-200',
+      borderHover: 'border-violet-300',
+      text: 'text-violet-700',
+      textLight: 'text-violet-600',
+      textDark: 'text-violet-800',
+      badgeBg: 'bg-violet-200',
+      badgeText: 'text-violet-800',
+      borderBadge: 'border-violet-300'
+    },
+    slate: {
+      bg: 'bg-slate-50',
+      bgTo: 'bg-slate-100',
+      border: 'border-slate-200',
+      borderHover: 'border-slate-300',
+      text: 'text-slate-700',
+      textLight: 'text-slate-600',
+      textDark: 'text-slate-800',
+      badgeBg: 'bg-slate-200',
+      badgeText: 'text-slate-800',
+      borderBadge: 'border-slate-300'
+    },
+    lime: {
+      bg: 'bg-lime-50',
+      bgTo: 'bg-lime-100',
+      border: 'border-lime-200',
+      borderHover: 'border-lime-300',
+      text: 'text-lime-700',
+      textLight: 'text-lime-600',
+      textDark: 'text-lime-800',
+      badgeBg: 'bg-lime-200',
+      badgeText: 'text-lime-800',
+      borderBadge: 'border-lime-300'
+    },
+    amber: {
+      bg: 'bg-amber-50',
+      bgTo: 'bg-amber-100',
+      border: 'border-amber-200',
+      borderHover: 'border-amber-300',
+      text: 'text-amber-700',
+      textLight: 'text-amber-600',
+      textDark: 'text-amber-800',
+      badgeBg: 'bg-amber-200',
+      badgeText: 'text-amber-800',
+      borderBadge: 'border-amber-300'
+    }
+  };
+  
+  return colorMap[color] || colorMap.slate;
+};
+
+// Enhanced user profile interface to match the comprehensive API response
+interface EnhancedUserProfile {
+  id: number;
+  login: string;
+  name: string;
+  email?: string;
+  avatar_url: string;
+  public_repos: number;
+  followers: number;
+  following: number;
+  bio?: string;
+  location?: string;
+  blog?: string;
+  company?: string;
+  created_at: string;
+  updated_at: string;
+  database_id: number | null;
+  github_user_id: number;
+  is_stored_user: boolean;
+  profile?: {
+    progress?: {
+      current_level: number;
+      xp_points: number;
+      badges: string[];
+      next_goal: string;
+      last_updated?: string;
+    };
+    skills_analysis?: {
+      id: number;
+      analysis_data?: {
+        skills?: Array<{
+          name: string;
+          level: number;
+          category: string;
+          confidence: number;
+          last_used?: string;
+          projects_count?: number;
+        }>;
+        roadmap?: Array<{
+          skill: string;
+          current_level: number;
+          target_level: number;
+          priority: string;
+          estimated_time: string;
+          resources: string[];
+          milestones?: string[];
+        }>;
+        overall_analysis?: {
+          total_skills: number;
+          average_level: number;
+          skill_distribution: Record<string, number>;
+          top_categories: string[];
+          recommended_focus: string[];
+        };
+      };
+      skill_level?: string;
+      strengths: string[];
+      growth_areas: string[];
+      target_role?: string;
+      match_percentage?: number;
+      created_at: string;
+      expires_at: string;
+    };
+    achievements?: Array<{
+      achievement_name: string;
+      description?: string;
+      earned_at: string;
+    }>;
+    onboarding?: {
+      uploaded_cv_url?: string;
+      target_role?: string;
+      chosen_path?: string;
+      onboarding_complete: boolean;
+      created_at: string;
+    };
+    recent_operations?: Array<{
+      operation_type: string;
+      description: string;
+      result: string;
+      created_at: string;
+    }>;
+    is_onboarded?: boolean;
+    current_level?: number;
+    xp_points?: number;
+  };
+  platform_data?: {
+    skills_analysis?: {
+      id: number;
+      analysis_data?: {
+        skills?: Array<{
+          name: string;
+          level: number;
+          category: string;
+          confidence?: number;
+          context?: string;
+          evidence?: string;
+          years_experience?: string;
+        }>;
+        development_level?: string;
+        match_percentage?: number;
+      };
+      skill_level?: string;
+      strengths?: string[];
+      growth_areas?: string[];
+      created_at: string;
+      expires_at: string;
+    };
+    progress?: {
+      current_level: number;
+      xp_points: number;
+      badges: string[];
+      next_goal: string;
+      last_updated?: string;
+    };
+    achievements?: Array<{
+      achievement_name: string;
+      description?: string;
+      earned_at: string;
+    }>;
+    onboarding?: {
+      uploaded_cv_url?: string;
+      target_role?: string;
+      chosen_path?: string;
+      onboarding_complete: boolean;
+      created_at: string;
+    };
+    repository_analyses?: Array<{
+      id: number;
+      owner: string;
+      repo_name: string;
+      analysis_type: string;
+      analysis_data: any;
+      overall_score: number;
+      created_at: string;
+      expires_at: string;
+    }>;
+    tech_recommendations?: Array<{
+      id: number;
+      owner: string;
+      repo_name: string;
+      current_stack?: any;
+      recommendations: any;
+      implementation_priority?: string;
+      created_at: string;
+      expires_at: string;
+    }>;
+    recent_ai_issues?: Array<{
+      id: number;
+      owner: string;
+      repo_name: string;
+      issue_title: string;
+      priority?: string;
+      complexity?: string;
+      status: string;
+      estimated_hours?: number;
+      created_at: string;
+    }>;
+    ai_repositories?: Array<{
+      id: number;
+      repo_name: string;
+      requirements: string;
+      created_files: number;
+      created_issues: number;
+      created_at: string;
+    }>;
+    leaderboard?: {
+      total_points: number;
+      current_rank?: number;
+      last_updated: string;
+    };
+    resume?: {
+      resume_data: any;
+      last_synced: string;
+    };
+  };
+  stats?: {
+    github_stats: {
+      public_repos: number;
+      followers: number;
+      following: number;
+    };
+    platform_stats: {
+      level: number;
+      xp: number;
+      achievements_count: number;
+      recent_operations_count: number;
+    };
+  };
+  summary_stats?: {
+    total_analyses: number;
+    total_ai_issues: number;
+    total_ai_repos: number;
+    total_achievements: number;
+    has_skills_analysis: boolean;
+    has_resume: boolean;
+    onboarding_complete: boolean;
+  };
+}
+
 const SkillTreePage = () => {
   const { apiCall, isAuthenticated, user } = useAuth()
   const [userData, setUserData] = useState<UserData | null>(null)
+  const [enhancedUserProfile, setEnhancedUserProfile] = useState<EnhancedUserProfile | null>(null)
   const [analysisResult, setAnalysisResult] = useState<SkillAnalysisResult | null>(null)
   const [githubAnalysis, setGithubAnalysis] = useState<GitHubAnalysisResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -258,6 +936,16 @@ const SkillTreePage = () => {
   const [targetRole, setTargetRole] = useState('software_engineer')
   const [githubUsername, setGithubUsername] = useState('')
   const [cvFile, setCvFile] = useState<File | null>(null)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   // Fetch comprehensive user data from expanded API
   const fetchUserData = async () => {
@@ -274,6 +962,9 @@ const SkillTreePage = () => {
         const data: UserData = await response.json()
         setUserData(data)
         setGithubUsername(data.login)
+        
+        // Also set enhanced user profile for the new comprehensive sections
+        setEnhancedUserProfile(data as any as EnhancedUserProfile)
         
         // Auto-switch to appropriate tab based on available data
         if (data.platform_data.skills_analysis) {
@@ -503,46 +1194,74 @@ const SkillTreePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <AuroraBackground className="dark min-h-screen">
+      {/* Mouse follower effect */}
+      <motion.div
+        className="fixed pointer-events-none z-50 w-3 h-3 bg-purple-400/20 rounded-full blur-sm"
+        animate={{
+          x: mousePosition.x - 6,
+          y: mousePosition.y - 6,
+        }}
+        transition={{ type: "spring", damping: 30, stiffness: 400 }}
+      />
+
+      {/* Dashboard Content */}
+      <div className="relative z-30 w-full min-h-screen">
+        <SidebarProvider
+          style={
+            {
+              "--sidebar-width": "calc(var(--spacing) * 72)",
+              "--header-height": "calc(var(--spacing) * 12)",
+            } as React.CSSProperties
+          }
+        >
+          <AppSidebar
+            variant="inset"
+            className="backdrop-blur-lg bg-black/30 border-purple-500/20"
+          />
+          <SidebarInset>
+            <SiteHeader />
+            <div className="flex flex-1 flex-col">
+              <div className="@container/main flex flex-1 flex-col gap-2">
+                <div className="max-w-7xl mx-auto w-full px-4 lg:px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="text-center mb-8 py-6"
         >
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">
+            <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full">
               <Target className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
               Skill Development Hub
             </h1>
           </div>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          <p className="text-purple-200/80 text-lg max-w-2xl mx-auto">
             Comprehensive AI-powered skill analysis, personalized roadmaps, and career development insights
           </p>
         </motion.div>
 
         {/* Analysis Input Section */}
-        <Card className="mb-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="mb-8 shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20 hover:shadow-purple-500/20 transition-all duration-300">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Brain className="w-5 h-5 text-purple-400" />
               Start Your Analysis
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-purple-200/80">
               Upload your CV or analyze your GitHub profile to get personalized insights
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="cv" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="cv" className="flex items-center gap-2">
+              <TabsList className="grid w-full grid-cols-2 bg-black/30 border-purple-500/20">
+                <TabsTrigger value="cv" className="flex items-center gap-2 text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">
                   <FileText className="w-4 h-4" />
                   CV Analysis
                 </TabsTrigger>
-                <TabsTrigger value="github" className="flex items-center gap-2">
+                <TabsTrigger value="github" className="flex items-center gap-2 text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">
                   <Github className="w-4 h-4" />
                   GitHub Analysis
                 </TabsTrigger>
@@ -551,23 +1270,23 @@ const SkillTreePage = () => {
               <TabsContent value="cv" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="cv-file">Upload CV (PDF, DOC, TXT)</Label>
+                    <Label htmlFor="cv-file" className="text-purple-200">Upload CV (PDF, DOC, TXT)</Label>
                     <Input
                       id="cv-file"
                       type="file"
                       accept=".pdf,.doc,.docx,.txt"
                       onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-                      className="cursor-pointer"
+                      className="cursor-pointer bg-black/30 border-purple-500/30 text-white file:bg-purple-500/20 file:text-purple-200 file:border-purple-500/30"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="target-role">Target Role</Label>
+                    <Label htmlFor="target-role" className="text-purple-200">Target Role</Label>
                     <select
                       id="target-role"
                       value={targetRole}
                       onChange={(e) => setTargetRole(e.target.value)}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 border border-purple-500/30 rounded-md bg-black/30 text-white"
                     >
                       <option value="software_engineer">Software Engineer</option>
                       <option value="frontend_developer">Frontend Developer</option>
@@ -582,7 +1301,7 @@ const SkillTreePage = () => {
                     <Button 
                       onClick={analyzeCV}
                       disabled={!cvFile || loading}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                      className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
                     >
                       {loading ? (
                         <>
@@ -607,22 +1326,23 @@ const SkillTreePage = () => {
               <TabsContent value="github" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="github-username">GitHub Username</Label>
+                    <Label htmlFor="github-username" className="text-purple-200">GitHub Username</Label>
                     <Input
                       id="github-username"
                       placeholder="your-github-username"
                       value={githubUsername}
                       onChange={(e) => setGithubUsername(e.target.value)}
+                      className="bg-black/30 border-purple-500/30 text-white placeholder:text-purple-200/50"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="target-role-github">Target Role</Label>
+                    <Label htmlFor="target-role-github" className="text-purple-200">Target Role</Label>
                     <select
                       id="target-role-github"
                       value={targetRole}
                       onChange={(e) => setTargetRole(e.target.value)}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 border border-purple-500/30 rounded-md bg-black/30 text-white"
                     >
                       <option value="software_engineer">Software Engineer</option>
                       <option value="frontend_developer">Frontend Developer</option>
@@ -637,7 +1357,7 @@ const SkillTreePage = () => {
                     <Button 
                       onClick={analyzeGitHub}
                       disabled={!githubUsername || loading}
-                      className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                      className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
                     >
                       {loading ? (
                         <>
@@ -664,18 +1384,18 @@ const SkillTreePage = () => {
 
         {/* Loading State */}
         {initialLoading && (
-          <Card className="mb-8 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="mb-8 shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20">
             <CardContent className="py-12">
               <div className="text-center">
                 <motion.div 
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
+                  className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"
                 />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                <h3 className="text-lg font-semibold text-white mb-2">
                   Loading Your Data...
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-purple-200/80">
                   Fetching comprehensive insights from your profile
                 </p>
               </div>
@@ -686,13 +1406,13 @@ const SkillTreePage = () => {
         {/* Results Section */}
         {!initialLoading && (userData || analysisResult || githubAnalysis) && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6 mb-6">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="skills">Skills</TabsTrigger>
-              <TabsTrigger value="progress">Progress</TabsTrigger>
-              <TabsTrigger value="repositories">Repositories</TabsTrigger>
-              <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6 mb-6 bg-black/30 border-purple-500/20">
+              <TabsTrigger value="overview" className="text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">Overview</TabsTrigger>
+              <TabsTrigger value="skills" className="text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">Skills</TabsTrigger>
+              <TabsTrigger value="progress" className="text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">Progress</TabsTrigger>
+              <TabsTrigger value="repositories" className="text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">Repositories</TabsTrigger>
+              <TabsTrigger value="roadmap" className="text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">Roadmap</TabsTrigger>
+              <TabsTrigger value="insights" className="text-purple-200 data-[state=active]:text-white data-[state=active]:bg-purple-500/30">Insights</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -704,76 +1424,76 @@ const SkillTreePage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
                 >
-                  <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-blue-100">
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20 hover:shadow-purple-500/20 transition-all duration-300">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-blue-600" />
+                      <CardTitle className="text-lg flex items-center gap-2 text-white">
+                        <TrendingUp className="w-5 h-5 text-purple-400" />
                         Current Level
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-blue-600 mb-2">
+                        <div className="text-3xl font-bold text-purple-400 mb-2">
                           {userData.platform_data.progress?.current_level || 1}
                         </div>
-                        <div className="text-sm text-gray-600 mb-3">
+                        <div className="text-sm text-purple-200/70 mb-3">
                           {userData.platform_data.progress?.xp_points || 0} XP
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-lg border-0 bg-gradient-to-br from-green-50 to-green-100">
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-green-500/20 hover:shadow-green-500/20 transition-all duration-300">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Award className="w-5 h-5 text-green-600" />
+                      <CardTitle className="text-lg flex items-center gap-2 text-white">
+                        <Award className="w-5 h-5 text-green-400" />
                         Achievements
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-green-600 mb-2">
+                        <div className="text-3xl font-bold text-green-400 mb-2">
                           {userData.summary_stats.total_achievements}
                         </div>
-                        <div className="text-sm text-gray-600 mb-3">
+                        <div className="text-sm text-green-200/70 mb-3">
                           Earned badges
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-purple-100">
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-blue-500/20 hover:shadow-blue-500/20 transition-all duration-300">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-purple-600" />
+                      <CardTitle className="text-lg flex items-center gap-2 text-white">
+                        <BarChart3 className="w-5 h-5 text-blue-400" />
                         Analyses
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-purple-600 mb-2">
+                        <div className="text-3xl font-bold text-blue-400 mb-2">
                           {userData.summary_stats.total_analyses}
                         </div>
-                        <div className="text-sm text-gray-600 mb-3">
+                        <div className="text-sm text-blue-200/70 mb-3">
                           Repository analyses
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-lg border-0 bg-gradient-to-br from-orange-50 to-orange-100">
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-orange-500/20 hover:shadow-orange-500/20 transition-all duration-300">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Github className="w-5 h-5 text-orange-600" />
+                      <CardTitle className="text-lg flex items-center gap-2 text-white">
+                        <Github className="w-5 h-5 text-orange-400" />
                         AI Projects
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-center">
-                        <div className="text-3xl font-bold text-orange-600 mb-2">
+                        <div className="text-3xl font-bold text-orange-400 mb-2">
                           {userData.summary_stats.total_ai_repos}
                         </div>
-                        <div className="text-sm text-gray-600 mb-3">
+                        <div className="text-sm text-orange-200/70 mb-3">
                           Generated projects
                         </div>
                       </div>
@@ -784,10 +1504,10 @@ const SkillTreePage = () => {
 
               {/* Tech Stack Overview */}
               {userData && prepareTechStackData().length > 0 && (
-                <Card className="shadow-lg border-0">
+                <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20 hover:shadow-purple-500/20 transition-all duration-300">
                   <CardHeader>
-                    <CardTitle>Technology Stack</CardTitle>
-                    <CardDescription>Your most used technologies</CardDescription>
+                    <CardTitle className="text-white">Technology Stack</CardTitle>
+                    <CardDescription className="text-purple-200/80">Your most used technologies</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-80">
@@ -1240,6 +1960,462 @@ const SkillTreePage = () => {
 
             {/* Skills Assessment Tab */}
             <TabsContent value="skills" className="space-y-6">
+              {/* Comprehensive Skill Domains */}
+              {enhancedUserProfile && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  {/* Skill Domains Overview */}
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20 hover:shadow-purple-500/20 transition-all duration-300">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <Layers className="w-6 h-6 text-purple-400" />
+                        Comprehensive Skill Domains
+                      </CardTitle>
+                      <CardDescription className="text-purple-200/80">
+                        Your expertise across {SKILL_DOMAINS.length} technology domains, powered by comprehensive data analysis
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {(() => {
+                        const processedDomains = processSkillDomainsFromAPI(enhancedUserProfile);
+                        const topDomains = processedDomains.slice(0, 6);
+                        
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {topDomains.map((domain, index) => {
+                              const IconComponent = domain.icon;
+                              const level = domain.level || 0;
+                              const expertiseCount = domain.expertiseCount || 0;
+                              const colors = getColorClasses(domain.color);
+                              
+                              return (
+                                <motion.div
+                                  key={domain.id}
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: index * 0.1 }}
+                                  className={`p-4 rounded-lg border-2 transition-all hover:shadow-lg cursor-pointer bg-gradient-to-br ${colors.bg} ${colors.bgTo} ${colors.border} hover:${colors.borderHover}`}
+                                >
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <IconComponent className={`w-5 h-5 ${colors.textLight}`} />
+                                      <h3 className={`font-semibold ${colors.textDark}`}>{domain.name}</h3>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className={`text-lg font-bold ${colors.text}`}>
+                                        {level}/5
+                                      </div>
+                                      <div className={`text-xs ${colors.textLight}`}>
+                                        {expertiseCount} skills
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <p className={`text-sm ${colors.text} mb-3`}>
+                                    {domain.description}
+                                  </p>
+                                  
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between text-xs">
+                                      <span className={colors.textLight}>Proficiency</span>
+                                      <span className={`${colors.textDark} font-medium`}>
+                                        {level === 0 ? 'Beginner' : 
+                                         level === 1 ? 'Novice' :
+                                         level === 2 ? 'Intermediate' :
+                                         level === 3 ? 'Advanced' :
+                                         level === 4 ? 'Expert' : 'Master'}
+                                      </span>
+                                    </div>
+                                    <Progress value={(level / 5) * 100} className="h-2" />
+                                  </div>
+                                  
+                                  <div className="mt-3 flex flex-wrap gap-1">
+                                    {domain.skills.slice(0, 4).map(skill => (
+                                      <Badge key={skill} variant="secondary" className={`text-xs ${colors.badgeBg} ${colors.badgeText}`}>
+                                        {skill}
+                                      </Badge>
+                                    ))}
+                                    {domain.skills.length > 4 && (
+                                      <Badge variant="outline" className={`text-xs ${colors.borderBadge} ${colors.text}`}>
+                                        +{domain.skills.length - 4}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+
+                  {/* Technology Stack from Repository Analysis */}
+                  {(() => {
+                    const techStack = getTechStackFromRepositories(enhancedUserProfile);
+                    
+                    if (techStack.length > 0) {
+                      return (
+                        <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-green-500/20 hover:shadow-green-500/20 transition-all duration-300">
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-white">
+                              <Code className="w-6 h-6 text-green-400" />
+                              Technology Stack Analysis
+                            </CardTitle>
+                            <CardDescription className="text-green-200/80">
+                              Technologies detected from your repository analyses ({techStack.length} technologies)
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <h4 className="font-semibold text-green-200 mb-3">Top Technologies</h4>
+                                <div className="space-y-2">
+                                  {techStack.slice(0, 10).map((tech, index) => (
+                                    <div key={tech.name} className="flex items-center justify-between p-2 rounded bg-green-500/10 border border-green-500/20">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                                        <span className="text-sm font-medium text-green-200">{tech.name}</span>
+                                        <Badge variant="outline" className="text-xs border-green-500/30 text-green-300">{tech.category}</Badge>
+                                      </div>
+                                      <span className="text-sm text-green-400 font-medium">{tech.count}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-semibold text-green-200 mb-3">Domain Distribution</h4>
+                                <div className="space-y-1">
+                                  {(() => {
+                                    const categoryCount: Record<string, number> = {};
+                                    techStack.forEach(tech => {
+                                      categoryCount[tech.category] = (categoryCount[tech.category] || 0) + tech.count;
+                                    });
+                                    
+                                    const sortedCategories = Object.entries(categoryCount)
+                                      .sort(([,a], [,b]) => b - a)
+                                      .slice(0, 8);
+                                      
+                                    const maxCount = Math.max(...Object.values(categoryCount));
+                                    
+                                    return sortedCategories.map(([category, count]) => (
+                                      <div key={category} className="space-y-1">
+                                        <div className="flex justify-between text-sm">
+                                          <span className="text-green-200 font-medium">{category}</span>
+                                          <span className="text-green-400">{count}</span>
+                                        </div>
+                                        <Progress 
+                                          value={(count / maxCount) * 100} 
+                                          className="h-2 bg-green-900/30"
+                                        />
+                                      </div>
+                                    ));
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* AI-Assisted Development Metrics */}
+                  {(() => {
+                    const aiMetrics = getAIExpertiseMetrics(enhancedUserProfile);
+                    
+                    if (aiMetrics && (aiMetrics.totalAIIssues > 0 || aiMetrics.totalAIRepos > 0 || aiMetrics.totalTechRecommendations > 0)) {
+                      return (
+                        <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-pink-500/20 hover:shadow-pink-500/20 transition-all duration-300">
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-white">
+                              <Brain className="w-6 h-6 text-pink-400" />
+                              AI-Assisted Development Expertise
+                            </CardTitle>
+                            <CardDescription className="text-pink-200/80">
+                              Your experience with AI-powered development tools and automation
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                              <div className="text-center p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                                <div className="text-2xl font-bold text-purple-400">{aiMetrics.totalAIIssues}</div>
+                                <div className="text-sm text-purple-200/70">AI Issues</div>
+                              </div>
+                              <div className="text-center p-3 bg-pink-500/10 rounded-lg border border-pink-500/20">
+                                <div className="text-2xl font-bold text-pink-400">{aiMetrics.totalAIRepos}</div>
+                                <div className="text-sm text-pink-200/70">AI Projects</div>
+                              </div>
+                              <div className="text-center p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                                <div className="text-2xl font-bold text-indigo-400">{aiMetrics.aiGeneratedFiles}</div>
+                                <div className="text-sm text-indigo-200/70">Generated Files</div>
+                              </div>
+                              <div className="text-center p-3 bg-violet-500/10 rounded-lg border border-violet-500/20">
+                                <div className="text-2xl font-bold text-violet-400">{aiMetrics.recentActivity}</div>
+                                <div className="text-sm text-violet-200/70">Recent Activity</div>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-pink-200 font-medium">Complexity Level</span>
+                                <span className="text-pink-400">
+                                  {aiMetrics.averageComplexity.toFixed(1)}/3.0 
+                                  ({aiMetrics.averageComplexity < 1.5 ? 'Simple' : 
+                                    aiMetrics.averageComplexity < 2.5 ? 'Moderate' : 'Complex'})
+                                </span>
+                              </div>
+                              <Progress 
+                                value={(aiMetrics.averageComplexity / 3) * 100} 
+                                className="h-3 bg-pink-900/30"
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Detailed Skills Breakdown */}
+                  {enhancedUserProfile.platform_data?.skills_analysis?.analysis_data?.skills && (
+                    <Card className="shadow-lg border-0 bg-gradient-to-br from-indigo-50 to-blue-100">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-indigo-700">
+                          <Star className="w-6 h-6" />
+                          Detailed Skills Analysis
+                        </CardTitle>
+                        <CardDescription>
+                          Your {enhancedUserProfile.platform_data.skills_analysis.analysis_data.skills.length} skills analyzed with experience levels and evidence
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-6">
+                          {(() => {
+                            const skillsByCategory: Record<string, any[]> = {};
+                            enhancedUserProfile.platform_data.skills_analysis.analysis_data.skills.forEach((skill: any) => {
+                              if (!skillsByCategory[skill.category]) {
+                                skillsByCategory[skill.category] = [];
+                              }
+                              skillsByCategory[skill.category].push(skill);
+                            });
+
+                            return Object.entries(skillsByCategory)
+                              .sort(([,a], [,b]) => b.length - a.length) // Sort by skill count
+                              .map(([category, skills]) => {
+                                const categoryIcon = category === 'frontend' ? Monitor :
+                                                   category === 'backend' ? Server :
+                                                   category === 'blockchain' ? Boxes :
+                                                   category === 'ai_ml' ? Brain :
+                                                   category === 'database' ? Database :
+                                                   category === 'cloud' ? Cloud :
+                                                   category === 'tools' ? Settings :
+                                                   category === 'devops' ? Cog :
+                                                   Code;
+
+                                const avgLevel = skills.reduce((sum, skill) => sum + skill.level, 0) / skills.length;
+                                const categoryColor = avgLevel >= 4 ? 'emerald' : avgLevel >= 3 ? 'blue' : avgLevel >= 2 ? 'yellow' : 'red';
+
+                                return (
+                                  <div key={category} className="space-y-3">
+                                    <div className="flex items-center gap-3 mb-4">
+                                      {React.createElement(categoryIcon, { className: `w-6 h-6 text-${categoryColor}-600` })}
+                                      <h3 className={`text-lg font-semibold text-${categoryColor}-800 capitalize`}>
+                                        {category.replace(/_/g, ' ')} ({skills.length} skills)
+                                      </h3>
+                                      <Badge className={`bg-${categoryColor}-100 text-${categoryColor}-800`}>
+                                        Avg Level: {avgLevel.toFixed(1)}/5
+                                      </Badge>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      {skills
+                                        .sort((a, b) => b.level - a.level) // Sort by skill level
+                                        .map((skill, index) => (
+                                        <motion.div
+                                          key={skill.name}
+                                          initial={{ opacity: 0, y: 10 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          transition={{ delay: index * 0.05 }}
+                                          className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                                        >
+                                          <div className="flex items-start justify-between mb-2">
+                                            <h4 className="font-semibold text-gray-800">{skill.name}</h4>
+                                            <div className="flex items-center gap-1">
+                                              {[...Array(5)].map((_, i) => (
+                                                <Star
+                                                  key={i}
+                                                  className={`w-3 h-3 ${i < skill.level ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                                />
+                                              ))}
+                                              <span className="text-sm font-medium text-gray-600 ml-1">
+                                                {skill.level}/5
+                                              </span>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="space-y-2 text-sm">
+                                            <div className="flex items-center gap-2">
+                                              <Clock className="w-3 h-3 text-gray-500" />
+                                              <span className="text-gray-600">
+                                                Experience: {skill.years_experience}
+                                              </span>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-2">
+                                              <Briefcase className="w-3 h-3 text-gray-500" />
+                                              <span className="text-gray-600 capitalize">
+                                                Context: {skill.context?.replace(/_/g, ' ') || 'Professional'}
+                                              </span>
+                                            </div>
+                                            
+                                            {skill.evidence && (
+                                              <details className="mt-2">
+                                                <summary className="cursor-pointer text-indigo-600 hover:text-indigo-800 text-xs font-medium">
+                                                  View Evidence & Projects
+                                                </summary>
+                                                <div className="mt-1 p-2 bg-indigo-50 rounded text-xs text-indigo-800">
+                                                  {skill.evidence}
+                                                </div>
+                                              </details>
+                                            )}
+                                          </div>
+                                        </motion.div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              });
+                          })()}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Project Highlights from Resume */}
+                  {enhancedUserProfile.platform_data?.resume?.resume_data?.cv_text && (
+                    <Card className="shadow-lg border-0 bg-gradient-to-br from-amber-50 to-yellow-100">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-amber-700">
+                          <Rocket className="w-6 h-6" />
+                          Featured Projects & Achievements
+                        </CardTitle>
+                        <CardDescription>
+                          Highlights from your professional experience and key projects
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {(() => {
+                          const cvText = enhancedUserProfile.platform_data.resume.resume_data.cv_text;
+                          
+                          // Extract project information from CV
+                          const projects = [
+                            {
+                              name: "BioxResearch - Research Funding Platform",
+                              tech: ["Next.js", "Solana", "AI", "Web3.js"],
+                              description: "Solana-based research funding platform with AI-empowered research demonstration capabilities and smart contracts for transparent funding mechanisms.",
+                              type: "Web3 + AI",
+                              highlight: "Smart Contracts + AI Agents"
+                            },
+                            {
+                              name: "Animex - XMTP Gaming Protocol",
+                              tech: ["Next.js", "XMTP", "AI Agents", "Base"],
+                              description: "Web-based gaming protocol with XMTP messaging integration and AI agent system with cross-chain messaging capabilities.",
+                              type: "Web3 Gaming",
+                              highlight: "Cross-Chain Messaging"
+                            },
+                            {
+                              name: "DocEase - Medical Communication Platform",
+                              tech: ["Next.js", "Solidity", "MongoDB", "AI", "Avalanche"],
+                              description: "Hybrid Web2/Web3 DApp for secure doctor-patient communication with AI prescription analyzer achieving 95% accuracy.",
+                              type: "HealthTech",
+                              highlight: "95% AI Accuracy"
+                            },
+                            {
+                              name: "AIAX - Financial Management Platform",
+                              tech: ["Next.js", "MongoDB", "Ethers.js", "CoinGecko API"],
+                              description: "Financial platform with crypto transaction support and autonomous portfolio management using AI agents.",
+                              type: "FinTech",
+                              highlight: "Autonomous AI Trading"
+                            },
+                            {
+                              name: "BrainBoost - AI Learning Assistant",
+                              tech: ["Next.js", "React.js", "Firebase", "Azure", "NLP"],
+                              description: "AI learning platform with 3D labs using Three.js and dynamic question generation system.",
+                              type: "EdTech",
+                              highlight: "3D Learning Labs"
+                            }
+                          ];
+
+                          return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {projects.map((project, index) => (
+                                <motion.div
+                                  key={project.name}
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: index * 0.1 }}
+                                  className="p-4 bg-white rounded-lg border border-amber-200 hover:shadow-lg transition-all"
+                                >
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div>
+                                      <h4 className="font-bold text-amber-800 text-sm">{project.name.split(' - ')[0]}</h4>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Badge variant="secondary" className="text-xs bg-amber-200 text-amber-800">
+                                          {project.type}
+                                        </Badge>
+                                        <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+                                          {project.highlight}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-xs text-amber-600 font-medium">
+                                        {project.tech.length} Technologies
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <p className="text-sm text-amber-700 mb-3 leading-relaxed">
+                                    {project.description}
+                                  </p>
+                                  
+                                  <div className="flex flex-wrap gap-1">
+                                    {project.tech.map(tech => (
+                                      <Badge key={tech} variant="secondary" className="text-xs bg-amber-100 text-amber-800">
+                                        {tech}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                        
+                        <div className="mt-6 p-4 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg border-l-4 border-amber-400">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Award className="w-5 h-5 text-amber-600" />
+                            <h4 className="font-semibold text-amber-800">Notable Achievements</h4>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-amber-700">
+                            <div>🏆 Winner - ACM Eastern India Hackathon</div>
+                            <div>🥈 Runners Up - B-Plan 2025</div>
+                            <div>🏆 Winner - TechTrek InnoVision 2024</div>
+                            <div>🎯 Finalist - Smart Bengal Hackathon 2024</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </motion.div>
+              )}
+
               {/* Skills from Platform Data */}
               {userData?.platform_data.skills_analysis && (
                 <>
@@ -1550,6 +2726,134 @@ const SkillTreePage = () => {
 
             {/* Career Insights Tab */}
             <TabsContent value="insights" className="space-y-6">
+              {/* Raw API Response Section */}
+              {enhancedUserProfile && (
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-slate-50 to-gray-100">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-700">
+                      <Terminal className="w-6 h-6" />
+                      Raw API Response
+                    </CardTitle>
+                    <CardDescription>
+                      Complete data structure from /demo/api/user endpoint - 
+                      {enhancedUserProfile.platform_data ? 
+                        `${Object.keys(enhancedUserProfile.platform_data).length} data sections loaded` : 
+                        'Basic profile data only'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center p-3 bg-slate-100 rounded-lg">
+                          <div className="text-xl font-bold text-slate-700">
+                            {enhancedUserProfile.summary_stats?.total_analyses || 0}
+                          </div>
+                          <div className="text-sm text-slate-600">Repository Analyses</div>
+                        </div>
+                        <div className="text-center p-3 bg-slate-100 rounded-lg">
+                          <div className="text-xl font-bold text-slate-700">
+                            {enhancedUserProfile.summary_stats?.total_ai_issues || 0}
+                          </div>
+                          <div className="text-sm text-slate-600">AI Issues</div>
+                        </div>
+                        <div className="text-center p-3 bg-slate-100 rounded-lg">
+                          <div className="text-xl font-bold text-slate-700">
+                            {enhancedUserProfile.summary_stats?.total_ai_repos || 0}
+                          </div>
+                          <div className="text-sm text-slate-600">AI Repositories</div>
+                        </div>
+                        <div className="text-center p-3 bg-slate-100 rounded-lg">
+                          <div className="text-xl font-bold text-slate-700">
+                            {enhancedUserProfile.summary_stats?.total_achievements || 0}
+                          </div>
+                          <div className="text-sm text-slate-600">Achievements</div>
+                        </div>
+                      </div>
+
+                      {/* Data Sections Overview */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                          <h4 className="font-semibold text-slate-800 mb-2">Available Data Sections</h4>
+                          <div className="space-y-1">
+                            {Object.entries({
+                              'Basic Profile': !!enhancedUserProfile.id,
+                              'Skills Analysis': !!enhancedUserProfile.profile?.skills_analysis,
+                              'User Progress': !!enhancedUserProfile.profile?.progress,
+                              'Achievements': !!enhancedUserProfile.profile?.achievements?.length,
+                              'Onboarding Data': !!enhancedUserProfile.profile?.onboarding,
+                              'Repository Analyses': !!enhancedUserProfile.platform_data?.repository_analyses?.length,
+                              'Tech Recommendations': !!enhancedUserProfile.platform_data?.tech_recommendations?.length,
+                              'AI Issues': !!enhancedUserProfile.platform_data?.recent_ai_issues?.length,
+                              'AI Repositories': !!enhancedUserProfile.platform_data?.ai_repositories?.length,
+                              'Leaderboard': !!enhancedUserProfile.platform_data?.leaderboard,
+                              'Resume Data': !!enhancedUserProfile.platform_data?.resume
+                            }).map(([section, hasData]) => (
+                              <div key={section} className="flex items-center justify-between p-2 rounded bg-slate-50">
+                                <span className="text-sm text-slate-700">{section}</span>
+                                <div className={`w-3 h-3 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-300'}`} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-semibold text-slate-800 mb-2">Data Freshness</h4>
+                          <div className="space-y-2 text-sm text-slate-600">
+                            <div>
+                              <strong>GitHub Data:</strong> {enhancedUserProfile.stats?.github_stats ? '✅ Fresh' : '❌ Missing'}
+                            </div>
+                            <div>
+                              <strong>Platform Data:</strong> {enhancedUserProfile.platform_data ? '✅ Available' : '❌ Not loaded'}
+                            </div>
+                            <div>
+                              <strong>Skills Analysis:</strong> {
+                                enhancedUserProfile.profile?.skills_analysis ? 
+                                `✅ Available (${enhancedUserProfile.profile.skills_analysis.analysis_data?.skills?.length || 0} skills)` : 
+                                '❌ Not analyzed'
+                              }
+                            </div>
+                            <div>
+                              <strong>Last Updated:</strong> {
+                                enhancedUserProfile.updated_at ? 
+                                new Date(enhancedUserProfile.updated_at).toLocaleString() : 
+                                'Unknown'
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Expandable JSON Viewer */}
+                      <div className="border border-slate-200 rounded-lg">
+                        <details className="group">
+                          <summary className="cursor-pointer p-4 bg-slate-100 rounded-t-lg hover:bg-slate-200 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-slate-700">
+                                📄 Full JSON Response ({JSON.stringify(enhancedUserProfile).length.toLocaleString()} characters)
+                              </span>
+                              <div className="text-sm text-slate-500 group-open:hidden">Click to expand</div>
+                              <div className="text-sm text-slate-500 hidden group-open:block">Click to collapse</div>
+                            </div>
+                          </summary>
+                          <div className="p-4 bg-slate-50 rounded-b-lg">
+                            <pre className="text-xs text-slate-700 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto bg-white p-4 rounded border">
+                              {JSON.stringify(enhancedUserProfile, null, 2)}
+                            </pre>
+                            <div className="mt-4 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                              <p className="text-sm text-blue-700">
+                                <strong>💡 Developer Note:</strong> This raw response shows all available data from the enhanced /demo/api/user endpoint. 
+                                Use this to understand the complete data structure and build more sophisticated skill analysis features.
+                              </p>
+                            </div>
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {analysisResult && (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1764,8 +3068,13 @@ const SkillTreePage = () => {
             </Card>
           </motion.div>
         )}
+                </div>
+              </div>
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
       </div>
-    </div>
+    </AuroraBackground>
   )
 }
 
