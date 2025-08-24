@@ -653,7 +653,7 @@ def demo_github_callback():
                 }), 500
 
         # Set httpOnly cookie and redirect to frontend
-        response = make_response(redirect("http://localhost:3000/dashboard"))
+        response = make_response(redirect("http://localhost:3000/onboarding"))
         response.set_cookie(
             "github_token",
             access_token,

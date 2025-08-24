@@ -8,6 +8,8 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+
+
     # Get frontend URL from environment or use default
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
     
