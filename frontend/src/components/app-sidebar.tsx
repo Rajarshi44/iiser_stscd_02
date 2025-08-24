@@ -15,6 +15,7 @@ import {
   IconSettings,
   IconUser,
   IconChartDots,
+  IconBrain,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/nav-documents";
@@ -53,6 +54,11 @@ const staticData = {
       title: "Contributions",
       url: "/contribution-chart",
       icon: IconChartDots,
+    },
+    {
+      title: "Skill Tree",
+      url: "/dashboard/skilltree",
+      icon: IconBrain,
     },
   ],
   navClouds: [
