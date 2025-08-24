@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthCard } from "@/components/auth/auth-card";
 import Plasma from "@/components/plasma";
 import { useAuth } from "@/context/Authcontext";
+import { SloopLogo } from "@/components/SloopLogo";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +57,11 @@ export default function AuthPage() {
 
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20 z-10" />
+
+      {/* Sloop Logo - Top Left */}
+      <div className="absolute top-6 left-6 z-30">
+        <SloopLogo />
+      </div>
 
       {/* Main Content */}
       <div className="relative z-20 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">

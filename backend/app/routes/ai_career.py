@@ -26,49 +26,85 @@ def allowed_file(filename):
 
 def _fallback_parse_cv(file_path):
     """Fallback CV parsing when agent is not available"""
+    print(f"📄 Starting fallback CV parsing for: {file_path}")
+    
     try:
-        import PyPDF2
-        import docx
-        
-        file_extension = Path(file_path).suffix.lower()
-        
-        if file_extension == '.pdf':
-            # Parse PDF using PyPDF2
-            with open(file_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
-                text = ""
-                for page in pdf_reader.pages:
-                    text += page.extract_text() + "\n"
-                return text.strip()
-        
-        elif file_extension == '.docx':
-            # Parse DOCX using python-docx
-            doc = docx.Document(file_path)
-            text = ""
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + "\n"
-            return text.strip()
-        
-        elif file_extension in ['.txt', '.md']:
-            # Read text files directly
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read().strip()
-        
-        else:
-            print(f"⚠️ Unsupported file format: {file_extension}")
+        # Check if file exists
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {file_path}")
             return ""
             
-    except ImportError as e:
-        print(f"⚠️ Required libraries not available for fallback parsing: {e}")
+        file_extension = Path(file_path).suffix.lower()
+        print(f"📎 File extension: {file_extension}")
+        
+        if file_extension == '.pdf':
+            print("🔍 Parsing PDF file...")
+            try:
+                import PyPDF2
+                with open(file_path, 'rb') as file:
+                    pdf_reader = PyPDF2.PdfReader(file)
+                    print(f"📄 PDF has {len(pdf_reader.pages)} pages")
+                    text = ""
+                    for i, page in enumerate(pdf_reader.pages):
+                        page_text = page.extract_text()
+                        text += page_text + "\n"
+                        print(f"📝 Page {i+1} extracted {len(page_text)} characters")
+                    print(f"✅ PDF parsing complete, total {len(text)} characters")
+                    return text.strip()
+            except ImportError:
+                print("❌ PyPDF2 not installed, trying alternative method")
+                # Try alternative PDF parsing
+                try:
+                    import pdfplumber
+                    with pdfplumber.open(file_path) as pdf:
+                        text = ""
+                        for page in pdf.pages:
+                            text += page.extract_text() + "\n"
+                    print(f"✅ Alternative PDF parsing complete, {len(text)} characters")
+                    return text.strip()
+                except ImportError:
+                    print("❌ No PDF parsing libraries available")
+                    return "PDF file uploaded but cannot be parsed. Please ensure content is accessible."
+        
+        elif file_extension == '.docx':
+            print("🔍 Parsing DOCX file...")
+            try:
+                import docx
+                doc = docx.Document(file_path)
+                text = ""
+                for paragraph in doc.paragraphs:
+                    text += paragraph.text + "\n"
+                print(f"✅ DOCX parsing complete, {len(text)} characters")
+                return text.strip()
+            except ImportError:
+                print("❌ python-docx not installed")
+                return "DOCX file uploaded but cannot be parsed. Please ensure python-docx is installed."
+        
+        elif file_extension in ['.txt', '.md']:
+            print("🔍 Reading text file...")
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                print(f"✅ Text file read, {len(content)} characters")
+                return content
+        
+        else:
+            print(f"❌ Unsupported file format: {file_extension}")
+            return f"Unsupported file format: {file_extension}. Please upload PDF, DOCX, or TXT files."
+            
+    except Exception as e:
+        print(f"❌ Fallback parsing failed with error: {e}")
+        import traceback
+        traceback.print_exc()
         # Try basic text reading as last resort
         try:
+            print("🔄 Attempting basic text reading as fallback...")
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                return f.read().strip()
-        except Exception:
-            return ""
-    except Exception as e:
-        print(f"⚠️ Fallback parsing failed: {e}")
-        return ""
+                content = f.read().strip()
+                print(f"✅ Basic text reading successful, {len(content)} characters")
+                return content
+        except Exception as e2:
+            print(f"❌ Even basic text reading failed: {e2}")
+            return f"Failed to parse file. Error: {str(e)}"
 
 def _fallback_extract_skills(cv_text):
     """Fallback skill extraction when agent is not available"""
@@ -703,7 +739,7 @@ def analyze_code_submission(current_user_id):
         return jsonify({"error": f"Code analysis failed: {str(e)}"}), 500
 
 @bp.route("/api/dashboard/summary", methods=["GET"])
-@token_required
+@auth_required
 def get_dashboard_summary(current_user_id):
     """Get comprehensive dashboard data"""
     try:
@@ -992,16 +1028,36 @@ def comprehensive_cv_analysis():
         
         # Step 1: Parse CV file
         print(f"📄 Parsing CV: {filename}")
-        if agent:
-            cv_text = agent.parse_cv(file_path)
-        else:
-            # Fallback CV parsing
-            cv_text = _fallback_parse_cv(file_path)
-        
-        if not cv_text:
-            return jsonify({"error": "Failed to parse CV file"}), 500
-        
-        print(f"✅ CV parsed successfully ({len(cv_text)} characters)")
+        try:
+            if agent:
+                cv_text = agent.parse_cv(file_path)
+            else:
+                # Fallback CV parsing
+                cv_text = _fallback_parse_cv(file_path)
+            
+            if not cv_text or len(cv_text.strip()) < 10:
+                return jsonify({
+                    "error": "Failed to extract readable content from CV file",
+                    "details": "The file may be corrupted, password-protected, or in an unsupported format",
+                    "file_info": {
+                        "filename": filename,
+                        "size": os.path.getsize(file_path) if os.path.exists(file_path) else 0,
+                        "extension": Path(file_path).suffix.lower()
+                    }
+                }), 500
+            
+            print(f"✅ CV parsed successfully ({len(cv_text)} characters)")
+            
+        except Exception as e:
+            print(f"❌ CV parsing failed: {e}")
+            return jsonify({
+                "error": "Failed to parse CV file",
+                "details": str(e),
+                "file_info": {
+                    "filename": filename,
+                    "extension": Path(file_path).suffix.lower()
+                }
+            }), 500
         
         # Step 2: Extract skills and career goals
         print("🧠 Extracting skills and career goals...")

@@ -93,18 +93,18 @@ export default function Page() {
   // Enhanced data fetching with error handling and contributions
   const fetchGitHubData = async (isRefresh = false) => {
     if (!user) return;
-    
+
     if (isRefresh) {
       setRefreshing(true);
     } else {
       setLoading(true);
     }
-    
+
     setError(null);
-    
+
     try {
       console.log('🔄 Fetching GitHub data...');
-      
+
       // Fetch all data in parallel for better performance
       const [profileData, reposData, contributionsData, statsData, activityData] = await Promise.all([
         getUserProfile().catch(err => {
@@ -139,7 +139,7 @@ export default function Page() {
       // Aggregate data for AI analysis
       const aggregated = aggregateDeveloperData(profileData, reposData, contributionsData, statsData);
       setAggregatedData(aggregated);
-      
+
       console.log('✅ GitHub data fetched successfully:', {
         profile: !!profileData,
         repos: reposData?.length || 0,
@@ -147,7 +147,7 @@ export default function Page() {
         stats: !!statsData,
         activity: !!activityData
       });
-      
+
     } catch (error) {
       console.error('❌ Error fetching GitHub data:', error);
       setError('Failed to load GitHub data. Please try refreshing.');
@@ -162,7 +162,7 @@ export default function Page() {
     if (!user) return;
 
     fetchGitHubData();
-    
+
     const interval = setInterval(() => {
       console.log('🔄 Auto-refreshing GitHub data...');
       fetchGitHubData(true);
@@ -212,8 +212,8 @@ export default function Page() {
                   transition={{ duration: 0.6, ease: "easeOut" }}
                   className="flex flex-col gap-4 py-4 md:gap-6 md:py-6"
                 >
-                  
-                  
+
+
                   {/* GitHub Profile Section */}
                   {user && (
                     <motion.div
@@ -326,7 +326,7 @@ export default function Page() {
                               <h4 className="text-white font-medium mb-3">Top Languages</h4>
                               <div className="flex gap-2 flex-wrap">
                                 {Object.entries(contributions.languages)
-                                  .sort(([,a], [,b]) => (b as number) - (a as number))
+                                  .sort(([, a], [, b]) => (b as number) - (a as number))
                                   .slice(0, 5)
                                   .map(([language, count]) => (
                                     <Badge key={language} variant="outline" className="border-purple-400/30 text-purple-200">
@@ -344,25 +344,24 @@ export default function Page() {
                                 <IconGitBranch className="size-4" />
                                 Recent Repositories
                               </h4>
-                              
+
                               {/* Repository Filter */}
                               <div className="flex gap-1 text-xs">
                                 {(['all', 'public', 'private'] as const).map((filter) => (
                                   <button
                                     key={filter}
                                     onClick={() => setRepoFilter(filter)}
-                                    className={`px-3 py-1 rounded border transition-colors capitalize ${
-                                      repoFilter === filter
-                                        ? 'border-purple-400 bg-purple-500/20 text-white'
-                                        : 'border-purple-600/30 text-purple-200/70 hover:border-purple-500 hover:text-white'
-                                    }`}
+                                    className={`px-3 py-1 rounded border transition-colors capitalize ${repoFilter === filter
+                                      ? 'border-purple-400 bg-purple-500/20 text-white'
+                                      : 'border-purple-600/30 text-purple-200/70 hover:border-purple-500 hover:text-white'
+                                      }`}
                                   >
                                     {filter}
                                   </button>
                                 ))}
                               </div>
                             </div>
-                            
+
                             {loading ? (
                               <div className="text-purple-200/60">Loading repositories...</div>
                             ) : (() => {
@@ -372,7 +371,7 @@ export default function Page() {
                                 if (repoFilter === 'public') return !repo.private;
                                 return true;
                               });
-                              
+
                               return filteredRepos.length > 0 ? (
                                 <>
                                   {/* Repository Stats */}
@@ -405,17 +404,16 @@ export default function Page() {
                                       </div>
                                     </div>
                                   </div>
-                                  
+
                                   {/* Repository Grid */}
                                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {filteredRepos.map((repo: any) => (
-                                      <div 
-                                        key={repo.id} 
-                                        className={`rounded-lg border p-4 hover:shadow-lg transition-all duration-300 ${
-                                          repo.private 
-                                            ? 'border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-400/50' 
-                                            : 'border-green-500/30 bg-green-500/5 hover:border-green-400/50'
-                                        }`}
+                                      <div
+                                        key={repo.id}
+                                        className={`rounded-lg border p-4 hover:shadow-lg transition-all duration-300 ${repo.private
+                                          ? 'border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-400/50'
+                                          : 'border-green-500/30 bg-green-500/5 hover:border-green-400/50'
+                                          }`}
                                       >
                                         <div className="flex items-start justify-between mb-2">
                                           <h5 className="text-white font-medium truncate pr-2 flex items-center gap-2">
@@ -426,31 +424,29 @@ export default function Page() {
                                             )}
                                             {repo.name}
                                           </h5>
-                                          <Badge 
-                                            variant="outline" 
-                                            className={`text-xs ${
-                                              repo.private 
-                                                ? 'border-yellow-400/40 text-yellow-300 bg-yellow-400/10' 
-                                                : 'border-green-400/40 text-green-300 bg-green-400/10'
-                                            }`}
+                                          <Badge
+                                            variant="outline"
+                                            className={`text-xs ${repo.private
+                                              ? 'border-yellow-400/40 text-yellow-300 bg-yellow-400/10'
+                                              : 'border-green-400/40 text-green-300 bg-green-400/10'
+                                              }`}
                                           >
                                             {repo.private ? 'Private' : 'Public'}
                                           </Badge>
                                         </div>
-                                        
+
                                         {repo.description && (
                                           <p className="text-xs text-purple-200/70 mb-3 line-clamp-2">
                                             {repo.description}
                                           </p>
                                         )}
-                                        
+
                                         <div className="flex items-center justify-between text-xs text-purple-200/60">
                                           <div className="flex items-center gap-3">
                                             {repo.language && (
                                               <span className="flex items-center gap-1">
-                                                <div className={`w-2 h-2 rounded-full ${
-                                                  repo.private ? 'bg-yellow-400' : 'bg-green-400'
-                                                }`}></div>
+                                                <div className={`w-2 h-2 rounded-full ${repo.private ? 'bg-yellow-400' : 'bg-green-400'
+                                                  }`}></div>
                                                 {repo.language}
                                               </span>
                                             )}
@@ -487,7 +483,7 @@ export default function Page() {
                     transition={{ duration: 0.6, delay: 0.3 }}
                     className="px-4 lg:px-6"
                   >
-                    <AIInsightsComponent 
+                    <AIInsightsComponent
                       developerData={aggregatedData}
                       className="shadow-xl hover:shadow-purple-500/20 transition-all duration-300"
                     />
@@ -524,7 +520,7 @@ export default function Page() {
                       <CardContent>
                         <div className="space-y-4">
                           <p className="text-purple-200/70">
-                            Get comprehensive insights into your skills, receive personalized learning roadmaps, 
+                            Get comprehensive insights into your skills, receive personalized learning roadmaps,
                             and accelerate your career development with AI-powered analysis.
                           </p>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -542,7 +538,7 @@ export default function Page() {
                             </div>
                           </div>
                           <div className="pt-4">
-                            <a 
+                            <a
                               href="/dashboard/skilltree"
                               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all duration-300 font-medium group-hover:scale-105 transform"
                             >

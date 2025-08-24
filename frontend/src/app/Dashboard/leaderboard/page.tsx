@@ -116,16 +116,16 @@ export default function LeaderboardPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis 
-                              dataKey="name" 
+                            <XAxis
+                              dataKey="name"
                               tick={{ fill: '#e2e8f0', fontSize: 12 }}
                               axisLine={{ stroke: '#374151' }}
                             />
-                            <YAxis 
+                            <YAxis
                               tick={{ fill: '#e2e8f0', fontSize: 12 }}
                               axisLine={{ stroke: '#374151' }}
                             />
-                            <Tooltip 
+                            <Tooltip
                               contentStyle={{
                                 backgroundColor: '#1f2937',
                                 border: '1px solid #8b5cf6',
@@ -154,13 +154,13 @@ export default function LeaderboardPage() {
                               outerRadius={80}
                               fill="#8884d8"
                               dataKey="value"
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                             >
                               {skillDistribution.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
-                            <Tooltip 
+                            <Tooltip
                               contentStyle={{
                                 backgroundColor: '#1f2937',
                                 border: '1px solid #8b5cf6',
@@ -207,7 +207,7 @@ export default function LeaderboardPage() {
                                       <Avatar className="size-10 ring-2 ring-purple-400/30">
                                         <AvatarImage src={u.avatar || undefined} alt={u.name} />
                                         <AvatarFallback className="bg-purple-600 text-white font-semibold">
-                                          {u.name.split(" ").map(p=>p[0]).join("")}
+                                          {u.name.split(" ").map(p => p[0]).join("")}
                                         </AvatarFallback>
                                       </Avatar>
                                       <div>

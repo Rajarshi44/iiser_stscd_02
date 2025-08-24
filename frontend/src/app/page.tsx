@@ -7,6 +7,7 @@ import Link from "next/link";
 import Plasma from "@/components/plasma";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { Highlight } from "@/components/ui/hero-highlight";
+import { SloopLogo } from "@/components/SloopLogo";
 
 const BorderMagicButton = () => {
     return (
@@ -48,6 +49,11 @@ export default function Home() {
 
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-blue-900/20 z-10" />
+
+            {/* Sloop Logo - Top Left */}
+            <div className="absolute top-6 left-6 z-40">
+                <SloopLogo />
+            </div>
 
             {/* Floating Particles */}
             <div className="absolute inset-0 z-20">
