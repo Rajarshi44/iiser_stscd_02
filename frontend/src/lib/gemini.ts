@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const API_KEY = 'AIzaSyA1l8AUjAnWX-6ujOuPIZ1DfDlCWkPIS1c';
+// Use environment variable for API key in production
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyA1l8AUjAnWX-6ujOuPIZ1DfDlCWkPIS1c';
 
 // Initialize the Gemini API
 const genAI = new GoogleGenerativeAI(API_KEY);
@@ -73,9 +74,9 @@ export class GeminiService {
     this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
-  async analyzeDeveloperProfile(data: DeveloperData): Promise<AIInsights> {
+  async analyzeDeveloperProfile(data: DeveloperData, targetRole?: string): Promise<AIInsights> {
     try {
-      const prompt = this.buildAnalysisPrompt(data);
+      const prompt = this.buildAnalysisPrompt(data, targetRole);
       
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
@@ -88,7 +89,7 @@ export class GeminiService {
     }
   }
 
-  private buildAnalysisPrompt(data: DeveloperData): string {
+  private buildAnalysisPrompt(data: DeveloperData, targetRole?: string): string {
     const {
       profile,
       repositories,
@@ -100,6 +101,20 @@ export class GeminiService {
     const languages = this.extractLanguages(repositories);
     const recentActivity = this.calculateRecentActivity(repositories);
     const projectComplexity = this.assessProjectComplexity(repositories);
+
+    const roleSpecificContext = targetRole 
+      ? `\n\nTARGET ROLE ANALYSIS:
+The developer is specifically targeting the role of: ${targetRole}
+
+Please tailor your analysis, recommendations, and learning path specifically for this role. Consider:
+1. What specific skills are most important for a ${targetRole}
+2. How their current experience aligns with ${targetRole} requirements
+3. What gaps need to be filled to succeed as a ${targetRole}
+4. Industry-specific technologies and practices for ${targetRole}
+5. Career progression pathways within ${targetRole}
+
+Focus heavily on role-specific recommendations and ensure the learning path directly supports their goal of becoming a ${targetRole}.`
+      : '';
 
     return `
 As an expert developer mentor and career advisor, analyze this GitHub developer profile and provide comprehensive insights in JSON format.
@@ -134,17 +149,17 @@ ADDITIONAL STATS:
 CALCULATED METRICS:
 - Primary languages: ${languages.slice(0, 5).join(', ')}
 - Recent activity: ${recentActivity.recentRepos} repos updated in last 6 months
-- Project complexity: ${projectComplexity.averageStars} avg stars, ${projectComplexity.averageForks} avg forks
+- Project complexity: ${projectComplexity.averageStars} avg stars, ${projectComplexity.averageForks} avg forks${roleSpecificContext}
 
 Please provide analysis in this EXACT JSON format:
 {
-  "overview": "A comprehensive 2-3 sentence overview of the developer's profile and coding journey",
-  "strengths": ["List 3-5 key strengths based on the data"],
-  "areasForImprovement": ["List 3-5 specific areas where they can improve"],
+  "overview": "A comprehensive 2-3 sentence overview of the developer's profile and coding journey${targetRole ? `, specifically in context of their ${targetRole} aspirations` : ''}",
+  "strengths": ["List 3-5 key strengths based on the data${targetRole ? ` and relevance to ${targetRole}` : ''}"],
+  "areasForImprovement": ["List 3-5 specific areas where they can improve${targetRole ? ` to excel as a ${targetRole}` : ''}"],
   "recommendedProjects": [
     {
-      "title": "Project Name",
-      "description": "Brief description of the project",
+      "title": "Project Name${targetRole ? ` (${targetRole}-focused)` : ''}",
+      "description": "Brief description of the project${targetRole ? ` and how it helps with ${targetRole} skills` : ''}",
       "difficulty": "Beginner|Intermediate|Advanced",
       "technologies": ["tech1", "tech2"],
       "estimatedTime": "X weeks/months"
@@ -152,12 +167,12 @@ Please provide analysis in this EXACT JSON format:
   ],
   "learningPath": [
     {
-      "skill": "Skill name",
-      "reason": "Why this skill is important for them",
+      "skill": "Skill name${targetRole ? ` (${targetRole}-relevant)` : ''}",
+      "reason": "Why this skill is important for them${targetRole ? ` as a ${targetRole}` : ''}",
       "resources": ["resource1", "resource2"]
     }
   ],
-  "careerAdvice": "Personalized career advice based on their profile and goals",
+  "careerAdvice": "Personalized career advice based on their profile and goals${targetRole ? `, specifically for becoming a successful ${targetRole}` : ''}",
   "score": {
     "technical": 85,
     "collaboration": 70,
@@ -167,14 +182,14 @@ Please provide analysis in this EXACT JSON format:
 }
 
 Focus on:
-1. Technical skills based on languages and project complexity
+1. Technical skills based on languages and project complexity${targetRole ? ` relevant to ${targetRole}` : ''}
 2. Collaboration skills based on followers, following, and community engagement
 3. Consistency based on contribution patterns
-4. Practical project recommendations that build on their existing skills
-5. Learning paths that address gaps and advance their career
+4. Practical project recommendations that build on their existing skills${targetRole ? ` toward ${targetRole}` : ''}
+5. Learning paths that address gaps and advance their career${targetRole ? ` in ${targetRole}` : ''}
 6. Realistic scores out of 100 for each category
 
-Make recommendations specific and actionable.
+Make recommendations specific and actionable${targetRole ? `, with clear connections to ${targetRole} success` : ''}.
 `;
   }
 

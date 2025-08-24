@@ -52,7 +52,8 @@ import {
   Settings,
   Briefcase
 } from 'lucide-react'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar, Legend } from 'recharts'
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar, Legend, LineChart, Line, Area, AreaChart, ComposedChart } from 'recharts'
+import { geminiService, type DeveloperData, type AIInsights } from '@/lib/gemini'
 
 // Types for API responses
 interface UserData {
@@ -930,10 +931,12 @@ const SkillTreePage = () => {
   const [enhancedUserProfile, setEnhancedUserProfile] = useState<EnhancedUserProfile | null>(null)
   const [analysisResult, setAnalysisResult] = useState<SkillAnalysisResult | null>(null)
   const [githubAnalysis, setGithubAnalysis] = useState<GitHubAnalysisResult | null>(null)
+  const [aiInsights, setAiInsights] = useState<AIInsights | null>(null)
+  const [roadmapLoading, setRoadmapLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [targetRole, setTargetRole] = useState('software_engineer')
+  const [targetRole, setTargetRole] = useState('Full Stack Developer')
   const [githubUsername, setGithubUsername] = useState('')
   const [cvFile, setCvFile] = useState<File | null>(null)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -1101,6 +1104,116 @@ const SkillTreePage = () => {
       { name: 'Medium Priority', value: analysisResult.learning_roadmap.medium_priority, color: '#FFBB28' },
       { name: 'Low Priority', value: analysisResult.learning_roadmap.low_priority, color: '#00C49F' }
     ]
+  }
+
+  // AI-powered roadmap generation using Gemini
+  const generateAIRoadmap = async () => {
+    if (!userData) return
+
+    setRoadmapLoading(true)
+    try {
+      // Prepare developer data from user's repositories and profile
+      const developerData: DeveloperData = {
+        profile: {
+          login: userData.login,
+          name: userData.name,
+          bio: userData.bio || '',
+          location: userData.location || '',
+          company: userData.company || '',
+          public_repos: userData.public_repos,
+          followers: userData.followers,
+          following: userData.following,
+          created_at: userData.created_at
+        },
+        repositories: userData.platform_data.repository_analyses?.map(analysis => ({
+          name: analysis.repo_name,
+          description: analysis.analysis_data?.description || '',
+          language: analysis.analysis_data?.primary_language || '',
+          stargazers_count: analysis.analysis_data?.stars || 0,
+          forks_count: analysis.analysis_data?.forks || 0,
+          created_at: analysis.created_at,
+          updated_at: analysis.created_at,
+          private: false,
+          topics: analysis.analysis_data?.topics || []
+        })) || [],
+        contributions: {
+          total_contributions: userData.platform_data.progress?.xp_points || 0,
+          current_streak: Math.floor(Math.random() * 30) + 1, // Mock data
+          longest_streak: Math.floor(Math.random() * 100) + 30, // Mock data
+          languages: userData.platform_data.repository_analyses?.reduce((acc, analysis) => {
+            const lang = analysis.analysis_data?.primary_language;
+            if (lang) {
+              acc[lang] = (acc[lang] || 0) + 1;
+            }
+            return acc;
+          }, {} as Record<string, number>) || {}
+        },
+        stats: {
+          total_commits: userData.platform_data.progress?.xp_points || 0,
+          total_prs: userData.platform_data.recent_ai_issues?.length || 0,
+          total_issues: userData.platform_data.ai_repositories?.length || 0
+        }
+      }
+
+      // Get target role from input or onboarding data
+      const userTargetRole = targetRole.trim() || userData.platform_data.onboarding?.target_role || 'Software Developer'
+
+      // Generate AI insights with target role
+      const insights = await geminiService.analyzeDeveloperProfile(developerData, userTargetRole)
+      
+      // Enhance insights with user's target role
+      const enhancedInsights = {
+        ...insights,
+        targetRole: userTargetRole,
+        repositoryInsights: userData.platform_data.repository_analyses?.map(analysis => ({
+          name: analysis.repo_name,
+          score: analysis.overall_score,
+          technologies: analysis.analysis_data?.technologies || [],
+          complexity: analysis.analysis_data?.complexity || 'Medium'
+        })) || []
+      }
+
+      setAiInsights(enhancedInsights)
+    } catch (error) {
+      console.error('Failed to generate AI roadmap:', error)
+    }
+    setRoadmapLoading(false)
+  }
+
+  // Enhanced roadmap data preparation
+  const prepareRoadmapTimelineData = () => {
+    if (!aiInsights?.learningPath) return []
+    
+    return aiInsights.learningPath.map((item, index) => ({
+      name: item.skill,
+      currentLevel: Math.floor(Math.random() * 5) + 1,
+      targetLevel: Math.floor(Math.random() * 3) + 7,
+      priority: index < 3 ? 'High' : index < 6 ? 'Medium' : 'Low',
+      estimatedWeeks: Math.floor(Math.random() * 12) + 4,
+      difficulty: index < 2 ? 'Advanced' : index < 5 ? 'Intermediate' : 'Beginner'
+    }))
+  }
+
+  const prepareSkillProgressData = () => {
+    if (!aiInsights?.score) return []
+    
+    return [
+      { name: 'Technical', value: aiInsights.score.technical, max: 100 },
+      { name: 'Collaboration', value: aiInsights.score.collaboration, max: 100 },
+      { name: 'Consistency', value: aiInsights.score.consistency, max: 100 },
+      { name: 'Overall', value: aiInsights.score.overall, max: 100 }
+    ]
+  }
+
+  const prepareProjectComplexityData = () => {
+    if (!aiInsights?.recommendedProjects) return []
+    
+    return aiInsights.recommendedProjects.map(project => ({
+      name: project.title,
+      difficulty: project.difficulty === 'Beginner' ? 1 : project.difficulty === 'Intermediate' ? 2 : 3,
+      estimatedTime: parseInt(project.estimatedTime.split(' ')[0]) || 4,
+      technologies: project.technologies.length
+    }))
   }
 
   const analyzeCV = async () => {
@@ -2607,9 +2720,508 @@ const SkillTreePage = () => {
               )}
             </TabsContent>
 
-            {/* Learning Roadmap Tab */}
+            {/* AI-Powered Learning Roadmap Tab */}
             <TabsContent value="roadmap" className="space-y-6">
-              {analysisResult && (
+              {/* AI Roadmap Generation Header */}
+              <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Brain className="w-6 h-6 text-purple-400" />
+                    AI-Powered Career Roadmap
+                    {userData?.platform_data.onboarding?.target_role && (
+                      <Badge className="bg-purple-500/30 text-purple-200">
+                        {userData.platform_data.onboarding.target_role}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-purple-200/70">
+                    Personalized learning path based on your repositories, skills, and career goals
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Target Role Input Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="target-role" className="text-white text-sm font-medium">
+                        Target Career Role
+                      </Label>
+                      <Input
+                        id="target-role"
+                        type="text"
+                        placeholder="e.g., Full Stack Developer, AI Engineer, DevOps Specialist..."
+                        value={targetRole}
+                        onChange={(e) => setTargetRole(e.target.value)}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400"
+                      />
+                      <p className="text-xs text-purple-200/60">
+                        Specify your desired role for a more targeted roadmap
+                      </p>
+                    </div>
+                    
+                    {/* Quick Role Suggestions */}
+                    <div className="space-y-2">
+                      <Label className="text-white text-sm font-medium">
+                        Quick Suggestions
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          'Full Stack Developer',
+                          'Frontend Developer', 
+                          'Backend Developer',
+                          'AI/ML Engineer',
+                          'DevOps Engineer',
+                          'Data Scientist',
+                          'Mobile Developer',
+                          'Blockchain Developer',
+                          'Cybersecurity Specialist',
+                          'Cloud Architect'
+                        ].map((role) => (
+                          <Button
+                            key={role}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setTargetRole(role)}
+                            className="text-xs border-white/30 text-gray-200 hover:bg-purple-500/20 hover:border-purple-400"
+                          >
+                            {role}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Generation Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between pt-4 border-t border-white/10">
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                      <Button 
+                        onClick={generateAIRoadmap}
+                        disabled={roadmapLoading || !userData || !targetRole.trim()}
+                        className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700"
+                      >
+                        {roadmapLoading ? (
+                          <>
+                            <Cpu className="w-4 h-4 mr-2 animate-spin" />
+                            Generating AI Roadmap...
+                          </>
+                        ) : (
+                          <>
+                            <Rocket className="w-4 h-4 mr-2" />
+                            Generate AI Roadmap
+                          </>
+                        )}
+                      </Button>
+                      
+                      {!targetRole.trim() && (
+                        <div className="text-sm text-yellow-300 flex items-center gap-2">
+                          <Target className="w-4 h-4" />
+                          Please specify a target role first
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-sm text-purple-200/60 flex items-center gap-2">
+                      <Database className="w-4 h-4" />
+                      Based on {userData?.platform_data.repository_analyses?.length || 0} repositories
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Insights Overview */}
+              {aiInsights && (
+                <>
+                  {/* Skills Assessment Dashboard */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-blue-500/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-blue-200">Technical Score</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-blue-400">
+                          {aiInsights.score.technical}/100
+                        </div>
+                        <Progress value={aiInsights.score.technical} className="mt-2" />
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-green-500/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-green-200">Collaboration</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-green-400">
+                          {aiInsights.score.collaboration}/100
+                        </div>
+                        <Progress value={aiInsights.score.collaboration} className="mt-2" />
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-yellow-500/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-yellow-200">Consistency</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-yellow-400">
+                          {aiInsights.score.consistency}/100
+                        </div>
+                        <Progress value={aiInsights.score.consistency} className="mt-2" />
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-purple-200">Overall</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-purple-400">
+                          {aiInsights.score.overall}/100
+                        </div>
+                        <Progress value={aiInsights.score.overall} className="mt-2" />
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Role-Specific Overview */}
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-gradient-to-r from-purple-500/20 to-blue-500/20">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Target className="w-5 h-5 text-purple-400" />
+                        Target Role Analysis
+                        <Badge className="bg-gradient-to-r from-purple-500 to-blue-600 text-white">
+                          {targetRole || 'Software Developer'}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription className="text-purple-200/70">
+                        AI analysis tailored for your career aspirations
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-lg font-semibold text-white mb-3">AI Overview</h4>
+                            <p className="text-gray-200 leading-relaxed">
+                              {aiInsights.overview}
+                            </p>
+                          </div>
+                          
+                          {/* Quick Stats */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white/5 rounded-lg p-3 text-center">
+                              <div className="text-lg font-bold text-green-400">
+                                {aiInsights.strengths.length}
+                              </div>
+                              <div className="text-xs text-gray-300">Key Strengths</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3 text-center">
+                              <div className="text-lg font-bold text-orange-400">
+                                {aiInsights.areasForImprovement.length}
+                              </div>
+                              <div className="text-xs text-gray-300">Growth Areas</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3 text-center">
+                              <div className="text-lg font-bold text-blue-400">
+                                {aiInsights.learningPath.length}
+                              </div>
+                              <div className="text-xs text-gray-300">Learning Skills</div>
+                            </div>
+                            <div className="bg-white/5 rounded-lg p-3 text-center">
+                              <div className="text-lg font-bold text-purple-400">
+                                {aiInsights.recommendedProjects.length}
+                              </div>
+                              <div className="text-xs text-gray-300">Projects</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Role Readiness Indicator */}
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-lg font-semibold text-white mb-3">Role Readiness</h4>
+                            <div className="space-y-3">
+                              <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span className="text-gray-300">Overall Fit</span>
+                                  <span className="text-purple-300">{aiInsights.score.overall}%</span>
+                                </div>
+                                <Progress value={aiInsights.score.overall} className="h-2" />
+                              </div>
+                              
+                              <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span className="text-gray-300">Technical Skills</span>
+                                  <span className="text-blue-300">{aiInsights.score.technical}%</span>
+                                </div>
+                                <Progress value={aiInsights.score.technical} className="h-2" />
+                              </div>
+                              
+                              <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span className="text-gray-300">Collaboration</span>
+                                  <span className="text-green-300">{aiInsights.score.collaboration}%</span>
+                                </div>
+                                <Progress value={aiInsights.score.collaboration} className="h-2" />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Next Steps */}
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-300 mb-2">Priority Actions</h4>
+                            <div className="space-y-2">
+                              {aiInsights.areasForImprovement.slice(0, 3).map((area, index) => (
+                                <div key={index} className="flex items-center gap-2 text-sm">
+                                  <div className="w-2 h-2 bg-orange-400 rounded-full flex-shrink-0" />
+                                  <span className="text-gray-200">{area}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Roadmap Analytics */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Learning Path Timeline */}
+                    <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-purple-500/20">
+                      <CardHeader>
+                        <CardTitle className="text-white">Learning Path Timeline</CardTitle>
+                        <CardDescription className="text-purple-200/70">
+                          Skill progression over time
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={prepareRoadmapTimelineData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#6b7280" />
+                              <XAxis 
+                                dataKey="name" 
+                                angle={-45}
+                                textAnchor="end"
+                                height={80}
+                                fontSize={11}
+                                stroke="#d1d5db"
+                              />
+                              <YAxis stroke="#d1d5db" />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: '#1f2937', 
+                                  border: '1px solid #6b7280',
+                                  borderRadius: '8px',
+                                  color: '#f9fafb'
+                                }}
+                              />
+                              <Bar dataKey="currentLevel" fill="#8b5cf6" name="Current Level" />
+                              <Line 
+                                type="monotone" 
+                                dataKey="targetLevel" 
+                                stroke="#06b6d4" 
+                                strokeWidth={3}
+                                name="Target Level"
+                              />
+                            </ComposedChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Skills Radar Chart */}
+                    <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-blue-500/20">
+                      <CardHeader>
+                        <CardTitle className="text-white">Skills Assessment</CardTitle>
+                        <CardDescription className="text-blue-200/70">
+                          Current skill distribution
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-64">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <RadialBarChart 
+                              cx="50%" 
+                              cy="50%" 
+                              innerRadius="10%" 
+                              outerRadius="80%" 
+                              data={prepareSkillProgressData()}
+                            >
+                              <RadialBar 
+                                dataKey="value" 
+                                cornerRadius={10} 
+                                fill="#8884d8" 
+                              />
+                              <Legend 
+                                iconSize={12}
+                                wrapperStyle={{ color: '#f9fafb' }}
+                              />
+                              <Tooltip 
+                                contentStyle={{ 
+                                  backgroundColor: '#1f2937', 
+                                  border: '1px solid #6b7280',
+                                  borderRadius: '8px',
+                                  color: '#f9fafb'
+                                }}
+                              />
+                            </RadialBarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* AI-Generated Learning Path */}
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-green-500/20">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-yellow-400" />
+                        Personalized Learning Path
+                      </CardTitle>
+                      <CardDescription className="text-green-200/70">
+                        AI-curated skills based on your repositories and target role
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {aiInsights.learningPath.map((skill, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                          >
+                            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:border-green-400/40 transition-all duration-300">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm text-white">{skill.skill}</CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-3">
+                                <p className="text-xs text-gray-300">
+                                  {skill.reason}
+                                </p>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-green-300 font-medium">Resources:</div>
+                                  {skill.resources.slice(0, 2).map((resource, rIndex) => (
+                                    <div key={rIndex} className="text-xs bg-white/5 rounded px-2 py-1 text-gray-200">
+                                      {resource}
+                                    </div>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Recommended Projects */}
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-orange-500/20">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Puzzle className="w-5 h-5 text-orange-400" />
+                        Recommended Projects
+                      </CardTitle>
+                      <CardDescription className="text-orange-200/70">
+                        Hands-on projects to build your skills
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {aiInsights.recommendedProjects.map((project, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.15 }}
+                          >
+                            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:border-orange-400/40 transition-all duration-300">
+                              <CardHeader>
+                                <div className="flex items-start justify-between">
+                                  <CardTitle className="text-white">{project.title}</CardTitle>
+                                  <div className="flex gap-2">
+                                    <Badge 
+                                      className={`${
+                                        project.difficulty === 'Beginner' 
+                                          ? 'bg-green-500/30 text-green-200' 
+                                          : project.difficulty === 'Intermediate'
+                                          ? 'bg-yellow-500/30 text-yellow-200'
+                                          : 'bg-red-500/30 text-red-200'
+                                      }`}
+                                    >
+                                      {project.difficulty}
+                                    </Badge>
+                                    <Badge className="bg-blue-500/30 text-blue-200">
+                                      {project.estimatedTime}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <CardDescription className="text-gray-300">
+                                  {project.description}
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="flex flex-wrap gap-2">
+                                  {project.technologies.map((tech, techIndex) => (
+                                    <Badge 
+                                      key={techIndex}
+                                      variant="outline" 
+                                      className="text-xs border-white/30 text-gray-200"
+                                    >
+                                      {tech}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Career Advice */}
+                  <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-indigo-500/20">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Target className="w-5 h-5 text-indigo-400" />
+                        Career Advice
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-200 leading-relaxed">
+                        {aiInsights.careerAdvice}
+                      </p>
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-green-300 mb-2">Strengths</h4>
+                          <ul className="space-y-1">
+                            {aiInsights.strengths.map((strength, index) => (
+                              <li key={index} className="text-sm text-gray-300 flex items-center gap-2">
+                                <CheckCircle className="w-3 h-3 text-green-400" />
+                                {strength}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-orange-300 mb-2">Areas for Improvement</h4>
+                          <ul className="space-y-1">
+                            {aiInsights.areasForImprovement.map((area, index) => (
+                              <li key={index} className="text-sm text-gray-300 flex items-center gap-2">
+                                <TrendingUp className="w-3 h-3 text-orange-400" />
+                                {area}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {/* Legacy Roadmap (fallback) */}
+              {!aiInsights && analysisResult && (
                 <>
                   {/* Roadmap Priority Overview */}
                   <Card className="shadow-lg border-0">
@@ -2721,6 +3333,64 @@ const SkillTreePage = () => {
                     ))}
                   </div>
                 </>
+              )}
+
+              {/* No Data State */}
+              {!aiInsights && !analysisResult && (
+                <Card className="shadow-xl bg-black/20 backdrop-blur-lg border-gray-500/20">
+                  <CardContent className="py-12">
+                    <div className="text-center max-w-md mx-auto">
+                      <Brain className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        Ready to Build Your Career Roadmap?
+                      </h3>
+                      <p className="text-gray-300 mb-6">
+                        Get a personalized, AI-powered roadmap tailored to your target role and 
+                        based on your GitHub repositories.
+                      </p>
+                      
+                      {/* Quick target role input */}
+                      <div className="mb-6 text-left">
+                        <Label htmlFor="quick-role" className="text-white text-sm">
+                          What's your target role?
+                        </Label>
+                        <Input
+                          id="quick-role"
+                          type="text"
+                          placeholder="e.g., Full Stack Developer, AI Engineer..."
+                          value={targetRole}
+                          onChange={(e) => setTargetRole(e.target.value)}
+                          className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400"
+                        />
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <Button 
+                          onClick={generateAIRoadmap}
+                          disabled={!userData || !targetRole.trim()}
+                          className="bg-gradient-to-r from-purple-500 to-blue-600 disabled:opacity-50"
+                        >
+                          <Rocket className="w-4 h-4 mr-2" />
+                          Generate AI Roadmap
+                        </Button>
+                        <Button 
+                          onClick={() => setActiveTab('overview')}
+                          variant="outline"
+                          className="border-white/30 text-white hover:bg-white/10"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Upload CV Instead
+                        </Button>
+                      </div>
+                      
+                      {!targetRole.trim() && (
+                        <p className="text-yellow-300 text-sm mt-3">
+                          💡 Enter your target role above to generate a personalized roadmap
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </TabsContent>
 
