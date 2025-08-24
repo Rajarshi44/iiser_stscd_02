@@ -134,6 +134,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         clearSession();
       }
+
+
+      
     } catch (error) {
       console.error('Refresh session error:', error);
       clearSession();
