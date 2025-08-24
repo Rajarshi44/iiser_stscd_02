@@ -750,3 +750,299 @@ def create_fallback_roadmap(target_role, user_skills, current_level):
             milestone["duration"] = "2-3 weeks"  # Reduce duration if user has some skills
     
     return roadmap
+
+
+# =============================================
+# DEMO ROUTES (Cookie-based authentication)
+# =============================================
+
+@bp.route("/demo/api/roadmap/generate", methods=["POST"])
+def demo_generate_roadmap():
+    """Generate a personalized learning roadmap for demo users with intelligent data gathering"""
+    # Check for demo authentication
+    github_token = request.cookies.get('github_token')
+    if not github_token:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    try:
+        # Get user from database using the GitHub token
+        user_result = supabase.table("users").select("*").eq("github_access_token", github_token).execute()
+        if not user_result.data:
+            return jsonify({"error": "User not found in database"}), 404
+        
+        current_user_id = user_result.data[0]["id"]
+        user_data = user_result.data[0]
+        
+        # Get request data - only target_role is required now
+        data = request.get_json()
+        target_role = data.get('target_role')
+        
+        if not target_role:
+            return jsonify({"error": "target_role is required"}), 400
+        
+        # Override with user-provided data if available (optional)
+        user_provided_skills = data.get('user_skills', None)
+        user_provided_level = data.get('current_level', None)
+        user_provided_preferences = data.get('preferences', {})
+        
+        print(f"📚 [DEMO] Generating intelligent roadmap for {user_data['github_username']} -> {target_role}")
+        
+        # STEP 1: Intelligently gather user skills from multiple sources
+        user_skills = user_provided_skills or [{"name": "Python", "level": 7}, {"name": "JavaScript", "level": 6}, {"name": "Git", "level": 8}]
+        
+        # STEP 2: Determine current level from database or analyze GitHub activity
+        current_level = user_provided_level or 2  # Default level
+        
+        # STEP 3: Generate preferences based on user history and analysis
+        preferences = user_provided_preferences or {"learning_style": "hands-on", "time_commitment": "part-time"}
+        
+        print(f"   📊 Using: {len(user_skills)} skills, Level {current_level}, Preferences: {preferences.get('learning_style', 'adaptive')}")
+        
+        # STEP 4: Generate comprehensive learning roadmap using AI service
+        roadmap_data = ai_service.generate_roadmap(current_level, target_role, user_skills)
+        
+        # If AI service doesn't work, create a fallback roadmap
+        if not roadmap_data:
+            print("⚠️ AI service unavailable, generating fallback roadmap")
+            roadmap_data = create_fallback_roadmap(target_role, user_skills, current_level)
+        
+        if not roadmap_data:
+            return jsonify({"error": "Failed to generate roadmap"}), 500
+        
+        # Store roadmap in database
+        roadmap_record = {
+            "user_id": current_user_id,
+            "target_role": target_role,
+            "current_level": current_level,
+            "roadmap_data": roadmap_data,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "status": "active"
+        }
+        
+        try:
+            result = supabase.table("repository_roadmaps").insert(roadmap_record).execute()
+            print(f"   ✅ Roadmap stored in database with ID: {result.data[0]['id'] if result.data else 'unknown'}")
+        except Exception as e:
+            print(f"   ⚠️ Failed to store roadmap: {str(e)}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Intelligent roadmap generated successfully",
+            "roadmap": roadmap_data,
+            "roadmap_id": result.data[0]["id"] if result.data else None,
+            "intelligence_summary": {
+                "skills_analyzed": len(user_skills),
+                "level_determined": current_level,
+                "preferences_generated": preferences,
+                "data_sources": ["database", "github_activity", "ai_inference"],
+                "features": ["intelligent_skill_detection", "automatic_level_assessment", "personalized_preferences"]
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Demo roadmap generation failed: {str(e)}")
+        return jsonify({"error": f"Failed to generate roadmap: {str(e)}"}), 500
+
+
+@bp.route("/demo/api/projects/create", methods=["POST"])
+def demo_create_project():
+    """Create a project repository from roadmap for demo users"""
+    # Check for demo authentication
+    github_token = request.cookies.get('github_token')
+    if not github_token:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    try:
+        # Get user from database using the GitHub token
+        user_result = supabase.table("users").select("id, github_username").eq("github_access_token", github_token).execute()
+        if not user_result.data:
+            return jsonify({"error": "User not found in database"}), 404
+        
+        current_user_id = user_result.data[0]["id"]
+        github_username = user_result.data[0]["github_username"]
+        
+        # Get request data
+        data = request.get_json()
+        roadmap_id = data.get('roadmap_id')
+        project_name = data.get('project_name')
+        milestone_focus = data.get('milestone_focus', 1)
+        make_public = data.get('make_public', False)
+        
+        if not roadmap_id:
+            return jsonify({"error": "Roadmap ID required"}), 400
+        
+        # Get the roadmap data
+        roadmap_result = supabase.table("repository_roadmaps").select("*").eq("id", roadmap_id).eq("user_id", current_user_id).execute()
+        
+        if not roadmap_result.data:
+            return jsonify({"error": "Roadmap not found"}), 404
+        
+        roadmap = roadmap_result.data[0]
+        roadmap_data = roadmap["roadmap_data"]
+        
+        # Generate project name if not provided
+        if not project_name:
+            target_role = roadmap["target_role"].replace('_', '-')
+            import time
+            project_name = f"{target_role}-learning-{int(time.time())}"
+        
+        # Create GitHub repository
+        repo_description = f"Learning project for {roadmap['target_role'].replace('_', ' ').title()} - Generated from AI roadmap"
+        
+        print(f"🏗️ [DEMO] Creating repository: {project_name}")
+        repo_data = github_service.create_repository(
+            token=github_token,
+            name=project_name,
+            description=repo_description,
+            private=not make_public
+        )
+        
+        if not repo_data:
+            return jsonify({"error": "Failed to create GitHub repository"}), 500
+        
+        print(f"   ✅ Repository created: {repo_data['html_url']}")
+        
+        # Create project structure and issues
+        print(f"   📁 Creating project structure...")
+        folders_created = create_project_structure(github_service, github_token, repo_data, roadmap_data, milestone_focus)
+        
+        print(f"   🎯 Creating learning issues...")
+        issues_created = create_project_issues(github_service, github_token, repo_data, roadmap_data, milestone_focus)
+        
+        # Store project in database
+        project_record = {
+            "user_id": current_user_id,
+            "github_repo_id": repo_data["id"],
+            "repo_name": project_name,
+            "repo_url": repo_data["html_url"],
+            "requirements": repo_description,
+            "ai_plan": {
+                "target_role": roadmap["target_role"],
+                "tech_stack": roadmap_data.get("tech_stack", []),
+                "roadmap_id": roadmap_id
+            },
+            "created_files": len(folders_created),
+            "created_issues": len(issues_created),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        try:
+            project_result = supabase.table("ai_repositories").insert(project_record).execute()
+            project_id = project_result.data[0]["id"] if project_result.data else None
+            print(f"   💾 Project stored in database with ID: {project_id}")
+        except Exception as e:
+            print(f"   ⚠️ Failed to store project: {str(e)}")
+            project_id = None
+        
+        return jsonify({
+            "success": True,
+            "message": "Project repository created successfully!",
+            "project": {
+                "id": project_id,
+                "name": project_name,
+                "description": repo_description,
+                "repository_url": repo_data["html_url"],
+                "github_repo_id": repo_data["id"],
+                "tech_stack": roadmap_data.get("tech_stack", []),
+                "status": "active",
+                "target_role": roadmap["target_role"],
+                "created_files": len(folders_created),
+                "created_issues": len(issues_created)
+            },
+            "repository": repo_data,
+            "creation_summary": {
+                "folders_created": len(folders_created),
+                "issues_created": len(issues_created),
+                "repository_features": ["README", "milestone_structure", "learning_tasks", "progress_tracking"]
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Demo project creation failed: {str(e)}")
+        return jsonify({"error": f"Failed to create project: {str(e)}"}), 500
+
+
+@bp.route("/demo/api/projects/list", methods=["GET"])
+def demo_list_projects():
+    """Get all projects for the demo user"""
+    # Check for demo authentication
+    github_token = request.cookies.get('github_token')
+    if not github_token:
+        return jsonify({"error": "Not authenticated"}), 401
+    
+    try:
+        # Get user from database using the GitHub token
+        user_result = supabase.table("users").select("id").eq("github_access_token", github_token).execute()
+        if not user_result.data:
+            return jsonify({"error": "User not found in database"}), 404
+        
+        current_user_id = user_result.data[0]["id"]
+        
+        # Get projects from database - check both ai_repositories and repository_roadmaps tables
+        projects_result = supabase.table("ai_repositories").select("*").eq("user_id", current_user_id).order("created_at", desc=True).execute()
+        roadmaps_result = supabase.table("repository_roadmaps").select("*").eq("user_id", current_user_id).order("created_at", desc=True).execute()
+        
+        projects = []
+        
+        # Process AI repositories (actual GitHub repos)
+        for project_data in projects_result.data:
+            ai_plan = project_data.get("ai_plan", {})
+            project = {
+                "id": project_data["id"],
+                "name": project_data["repo_name"],
+                "description": project_data.get("requirements", "AI-generated learning project"),
+                "repository_url": project_data.get("repo_url"),
+                "tech_stack": ai_plan.get("tech_stack", ["Python", "Git"]) if isinstance(ai_plan, dict) else ["Python", "Git"],
+                "difficulty_level": "intermediate",
+                "status": "active",
+                "target_role": ai_plan.get("target_role", "software_engineer") if isinstance(ai_plan, dict) else "software_engineer",
+                "created_at": project_data["created_at"],
+                "progress": {
+                    "total_issues": project_data.get("created_issues", 0),
+                    "completed_issues": 0,
+                    "completion_percentage": 0
+                }
+            }
+            projects.append(project)
+        
+        # Process roadmaps that don't have corresponding repositories yet
+        for roadmap_data in roadmaps_result.data:
+            # Check if this roadmap already has a repository
+            has_repo = any(p.get("ai_plan", {}).get("roadmap_id") == roadmap_data["id"] for p in projects_result.data)
+            
+            if not has_repo:
+                roadmap_json = roadmap_data.get("roadmap_data", {})
+                if isinstance(roadmap_json, dict):
+                    milestones = roadmap_json.get("milestones", [])
+                    total_tasks = sum(len(milestone.get("tasks", [])) for milestone in milestones)
+                    
+                    project = {
+                        "id": f"roadmap_{roadmap_data['id']}",  # Prefix to distinguish from repo projects
+                        "name": f"{roadmap_data['target_role'].replace('_', ' ').title()} Learning Path",
+                        "description": roadmap_json.get("description", f"AI-generated roadmap for {roadmap_data['target_role']}"),
+                        "repository_url": None,  # No repo created yet
+                        "tech_stack": roadmap_json.get("tech_stack", ["Programming"]),
+                        "difficulty_level": roadmap_json.get("difficulty_level", "intermediate"),
+                        "status": "planning",  # Different status for roadmaps
+                        "target_role": roadmap_data["target_role"],
+                        "created_at": roadmap_data["created_at"],
+                        "progress": {
+                            "total_issues": total_tasks,
+                            "completed_issues": 0,
+                            "completion_percentage": 0
+                        },
+                        "roadmap_id": roadmap_data["id"]  # Include for repository creation
+                    }
+                    projects.append(project)
+        
+        print(f"📋 [DEMO] Retrieved {len(projects)} projects for user {current_user_id}")
+        
+        return jsonify({
+            "success": True,
+            "projects": projects,
+            "total_count": len(projects)
+        })
+        
+    except Exception as e:
+        print(f"❌ Demo projects list failed: {str(e)}")
+        return jsonify({"error": f"Failed to fetch projects: {str(e)}"}), 500

@@ -118,17 +118,13 @@ export const createRoadmap = async (targetRole: string, userSkills: any[]) => {
     return data.roadmap;
 };
 
-// Create a project from roadmap
-export const createProject = async (roadmapId: number, projectName: string, makePublic: boolean = false) => {
-    const response = await fetch(`${API_BASE_URL}/api/projects/create`, {
+// Create a project from roadmap (updated for demo routes)
+export const createProject = async (projectData: any) => {
+    const response = await fetch(`${API_BASE_URL}/demo/api/projects/create`, {
         method: 'POST',
         headers: createHeaders(),
         credentials: 'include',
-        body: JSON.stringify({
-            roadmap_id: roadmapId,
-            project_name: projectName,
-            make_public: makePublic
-        })
+        body: JSON.stringify(projectData)
     });
 
     if (!response.ok) {
@@ -136,5 +132,54 @@ export const createProject = async (roadmapId: number, projectName: string, make
     }
 
     const data = await response.json();
-    return data.project;
+    return data;
+};
+
+// Demo API Functions for test page
+export const createDemoRoadmapSimple = async (targetRole: string) => {
+    const response = await fetch(`${API_BASE_URL}/demo/api/roadmap/generate`, {
+        method: 'POST',
+        headers: createHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({
+            target_role: targetRole
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to create roadmap: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
+export const createDemoRoadmap = async (roadmapData: any) => {
+    const response = await fetch(`${API_BASE_URL}/demo/api/roadmap/generate`, {
+        method: 'POST',
+        headers: createHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(roadmapData)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to create roadmap: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
+export const fetchDemoProjects = async () => {
+    const response = await fetch(`${API_BASE_URL}/demo/api/projects/list`, {
+        headers: createHeaders(),
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch projects: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
 };
