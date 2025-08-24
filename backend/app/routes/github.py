@@ -662,6 +662,8 @@ def demo_github_callback():
             secure=False,  # Set to True in production with HTTPS
             samesite="Lax",
         )
+
+        
         
         # Set user_id cookie for authentication
         response.set_cookie(
