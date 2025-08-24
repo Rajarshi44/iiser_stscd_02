@@ -8,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { 
-  Briefcase, 
-  FileText, 
-  Upload, 
-  Sparkles, 
+import {
+  Briefcase,
+  FileText,
+  Upload,
+  Sparkles,
   Github,
   Loader2,
   CheckCircle,
@@ -21,7 +21,7 @@ import {
 
 const roleOptions = [
   "Software Engineer",
-  "Frontend Developer", 
+  "Frontend Developer",
   "Backend Developer",
   "Full Stack Developer",
   "DevOps Engineer",
@@ -140,7 +140,7 @@ export default function OnBoardingPage() {
         });
         return;
       }
-      
+
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
@@ -150,7 +150,7 @@ export default function OnBoardingPage() {
         });
         return;
       }
-      
+
       setCvFile(file);
       setShowAiSection(false);
       setAnalysisResult(null);
@@ -182,13 +182,13 @@ export default function OnBoardingPage() {
     }
 
     const formData = new FormData();
-    formData.append('cv_file', cvFile); // Backend expects 'cv_file', not 'cv'
+    formData.append('cv_file', cvFile); // Fixed field name to match backend
     formData.append('target_role', targetRole === "Other" ? customRole : targetRole);
 
     const response = await fetch(`${BACKEND_URL}/api/cv/analyze`, {
       method: 'POST',
       credentials: 'include', // Include cookies for authentication
-      body: formData,
+      body: formData
     });
 
     if (!response.ok) {
@@ -196,12 +196,15 @@ export default function OnBoardingPage() {
       throw new Error(errorData.error || `CV analysis failed: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('CV Analysis Result:', result); // Debug log
+
+    return result;
   };
 
   const analyzeGitHubProfile = async (): Promise<AnalysisResult> => {
     const finalRole = targetRole === "Other" ? customRole : targetRole;
-    
+
     const response = await fetch(`${BACKEND_URL}/api/onboarding/github-analysis`, {
       method: 'POST',
       credentials: 'include', // Include cookies for authentication
@@ -225,7 +228,7 @@ export default function OnBoardingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     const finalRole = targetRole === "Other" ? customRole : targetRole;
     if (!finalRole) {
@@ -248,10 +251,10 @@ export default function OnBoardingPage() {
 
     setIsLoading(true);
     setCurrentStep('analysis');
-    
+
     try {
       let result: AnalysisResult;
-      
+
       if (cvFile) {
         // Analyze CV
         toast({
@@ -267,15 +270,15 @@ export default function OnBoardingPage() {
         });
         result = await analyzeGitHubProfile();
       }
-      
+
       setAnalysisResult(result);
       setCurrentStep('complete');
-      
+
       toast({
         title: "Analysis complete!",
         description: "Your profile has been analyzed and recommendations are ready.",
       });
-      
+
     } catch (error) {
       console.error('Analysis failed:', error);
       toast({
@@ -313,7 +316,7 @@ export default function OnBoardingPage() {
             <CheckCircle className="w-6 h-6 text-green-400" />
             <h3 className="text-xl font-semibold text-white">Analysis Complete!</h3>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-6">
             {/* Skills */}
             <div>
@@ -455,7 +458,7 @@ export default function OnBoardingPage() {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Bento Grid Container */}
         <BentoGrid className="mx-auto grid max-w-7xl grid-cols-1 gap-6 md:auto-rows-[20rem] md:grid-cols-2">
-          
+
           {/* Target Role Card */}
           <BentoGridItem
             className="md:col-span-2 bg-slate-950/80 backdrop-blur-md border-purple-500/30"
@@ -478,18 +481,17 @@ export default function OnBoardingPage() {
                       key={role}
                       type="button"
                       onClick={() => handleRoleChange(role)}
-                      className={`group/btn relative p-3 rounded-lg border text-sm font-medium transition-all ${
-                        targetRole === role
-                          ? "border-purple-500 bg-purple-500/20 text-purple-100"
-                          : "border-gray-600 bg-slate-800/50 text-gray-300 hover:border-purple-400 hover:bg-slate-700/50"
-                      }`}
+                      className={`group/btn relative p-3 rounded-lg border text-sm font-medium transition-all ${targetRole === role
+                        ? "border-purple-500 bg-purple-500/20 text-purple-100"
+                        : "border-gray-600 bg-slate-800/50 text-gray-300 hover:border-purple-400 hover:bg-slate-700/50"
+                        }`}
                     >
                       {role}
                       <BottomGradient />
                     </button>
                   ))}
                 </div>
-                
+
                 {targetRole === "Other" && (
                   <LabelInputContainer>
                     <Input
@@ -630,7 +632,7 @@ export default function OnBoardingPage() {
         </div>
         <h2 className="text-2xl font-bold text-white mb-4">Analyzing Your Profile</h2>
         <p className="text-gray-300 text-lg">
-          {cvFile 
+          {cvFile
             ? "Processing your CV and extracting insights..."
             : "Analyzing your GitHub profile and generating recommendations..."
           }
@@ -670,7 +672,7 @@ export default function OnBoardingPage() {
           {currentStep === 'complete' && renderAnalysisResult()}
         </motion.div>
       </div>
-      
+
       <Toaster />
     </div>
   );

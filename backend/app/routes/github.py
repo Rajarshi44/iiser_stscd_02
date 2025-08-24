@@ -663,6 +663,16 @@ def demo_github_callback():
             samesite="Lax",
         )
         
+        # Set user_id cookie for authentication
+        response.set_cookie(
+            "user_id",
+            str(user_id),
+            max_age=60 * 60 * 24 * 7,  # 7 days
+            httponly=True,
+            secure=False,
+            samesite="Lax",
+        )
+        
         # Also set user info cookie for frontend access (without sensitive data)
         user_info = {
             "id": user_id,
@@ -1241,4 +1251,5 @@ def demo_logout():
     response = make_response(redirect("http://localhost:3000/login"))
     response.set_cookie("github_token", "", expires=0)
     response.set_cookie("user_info", "", expires=0)
+    response.set_cookie("user_id", "", expires=0)
     return response

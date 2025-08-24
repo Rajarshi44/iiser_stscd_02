@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 import os
-from ..utils.decorators import token_required
+from ..utils.decorators import token_required, auth_required
 from ..services.supabase_client import supabase
 from ..services.ai_agent_service import AIAgentService
 from ..services.github_skill_analyzer import GitHubSkillAnalyzer
@@ -196,7 +196,7 @@ def _fallback_generate_roadmap(target_role):
     return roadmap
 
 @bp.route("/api/onboarding/cv-analysis", methods=["POST"])
-@token_required
+@auth_required
 def cv_analysis_onboarding(current_user_id):
     """Complete CV analysis and onboarding flow"""
     try:
@@ -294,7 +294,7 @@ def cv_analysis_onboarding(current_user_id):
             "user_id": current_user_id,
             "operation_type": "cv_analysis_onboarding",
             "target_repository": None,
-            "input_data": {"target_role": target_role, "chosen_path": chosen_path},
+            "input_data": {"target_role": target_role, "chosen_path": "auto_generated"},
             "output_data": analysis_result,
             "success": True,
             "ai_model_used": "Gemini AI Agent",
