@@ -11,6 +11,7 @@ import base64
 bp = Blueprint("projects", __name__)
 
 # Initialize services
+
 ai_service = AIAgentService()
 
 class GitHubService:
