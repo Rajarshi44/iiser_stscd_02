@@ -720,6 +720,9 @@ def demo_get_user():
         
         if user_result.data:
             user_data = user_result.data[0]
+            user_id = user_data["id"]
+            github_user_id = user_data["github_user_id"]
+            
             # Remove sensitive data before returning
             user_data.pop("github_access_token", None)
             
@@ -733,8 +736,180 @@ def demo_get_user():
             except Exception as e:
                 print(f"Warning: Could not fetch fresh GitHub data: {e}")
             
-            # Return user data in GitHub API format for compatibility
+            # Fetch comprehensive user data from all related tables
+            comprehensive_data = {}
+            
+            # 1. User Skills Analysis
+            try:
+                skills_result = supabase.table("user_skills_analysis").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(1).execute()
+                if skills_result.data:
+                    comprehensive_data["skills_analysis"] = skills_result.data[0]
+                    # Remove user_id from nested data to avoid duplication
+                    comprehensive_data["skills_analysis"].pop("user_id", None)
+            except Exception as e:
+                print(f"Warning: Could not fetch skills analysis: {e}")
+                comprehensive_data["skills_analysis"] = None
+            
+            # 2. User Progress
+            try:
+                progress_result = supabase.table("user_progress").select("*").eq("user_id", user_id).execute()
+                if progress_result.data:
+                    comprehensive_data["progress"] = progress_result.data[0]
+                    comprehensive_data["progress"].pop("user_id", None)
+                else:
+                    # Create default progress if none exists
+                    default_progress = {
+                        "current_level": 1,
+                        "xp_points": 0,
+                        "badges": [],
+                        "next_goal": "Complete your first repository analysis"
+                    }
+                    comprehensive_data["progress"] = default_progress
+            except Exception as e:
+                print(f"Warning: Could not fetch user progress: {e}")
+                comprehensive_data["progress"] = None
+            
+            # 3. User Achievements
+            try:
+                achievements_result = supabase.table("user_achievements").select("*").eq("user_id", user_id).order("earned_at", desc=True).execute()
+                comprehensive_data["achievements"] = [
+                    {
+                        "achievement_name": ach["achievement_name"],
+                        "description": ach.get("description"),
+                        "earned_at": ach["earned_at"]
+                    }
+                    for ach in achievements_result.data
+                ]
+            except Exception as e:
+                print(f"Warning: Could not fetch achievements: {e}")
+                comprehensive_data["achievements"] = []
+            
+            # 4. User Onboarding
+            try:
+                onboarding_result = supabase.table("user_onboarding").select("*").eq("user_id", user_id).execute()
+                if onboarding_result.data:
+                    comprehensive_data["onboarding"] = onboarding_result.data[0]
+                    comprehensive_data["onboarding"].pop("user_id", None)
+            except Exception as e:
+                print(f"Warning: Could not fetch onboarding data: {e}")
+                comprehensive_data["onboarding"] = None
+            
+            # 5. User Resume
+            try:
+                resume_result = supabase.table("user_resume").select("*").eq("user_id", user_id).order("last_synced", desc=True).limit(1).execute()
+                if resume_result.data:
+                    comprehensive_data["resume"] = resume_result.data[0]
+                    comprehensive_data["resume"].pop("user_id", None)
+            except Exception as e:
+                print(f"Warning: Could not fetch resume data: {e}")
+                comprehensive_data["resume"] = None
+            
+            # 6. Repository Analyses
+            try:
+                analyses_result = supabase.table("repository_analyses").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(10).execute()
+                comprehensive_data["repository_analyses"] = [
+                    {
+                        "id": analysis["id"],
+                        "owner": analysis["owner"],
+                        "repo_name": analysis["repo_name"],
+                        "analysis_type": analysis["analysis_type"],
+                        "analysis_data": analysis["analysis_data"],
+                        "overall_score": analysis["overall_score"],
+                        "created_at": analysis["created_at"],
+                        "expires_at": analysis["expires_at"]
+                    }
+                    for analysis in analyses_result.data
+                ]
+            except Exception as e:
+                print(f"Warning: Could not fetch repository analyses: {e}")
+                comprehensive_data["repository_analyses"] = []
+            
+            # 7. Tech Recommendations
+            try:
+                tech_result = supabase.table("tech_recommendations").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(5).execute()
+                comprehensive_data["tech_recommendations"] = [
+                    {
+                        "id": rec["id"],
+                        "owner": rec["owner"],
+                        "repo_name": rec["repo_name"],
+                        "current_stack": rec.get("current_stack"),
+                        "recommendations": rec["recommendations"],
+                        "implementation_priority": rec.get("implementation_priority"),
+                        "created_at": rec["created_at"],
+                        "expires_at": rec["expires_at"]
+                    }
+                    for rec in tech_result.data
+                ]
+            except Exception as e:
+                print(f"Warning: Could not fetch tech recommendations: {e}")
+                comprehensive_data["tech_recommendations"] = []
+            
+            # 8. Leaderboard Position
+            try:
+                leaderboard_result = supabase.table("leaderboard").select("*").eq("user_id", user_id).execute()
+                if leaderboard_result.data:
+                    comprehensive_data["leaderboard"] = {
+                        "total_points": leaderboard_result.data[0]["total_points"],
+                        "current_rank": leaderboard_result.data[0].get("current_rank"),
+                        "last_updated": leaderboard_result.data[0]["last_updated"]
+                    }
+            except Exception as e:
+                print(f"Warning: Could not fetch leaderboard data: {e}")
+                comprehensive_data["leaderboard"] = None
+            
+            # 9. AI Issues (Recent)
+            try:
+                ai_issues_result = supabase.table("ai_issues").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(5).execute()
+                comprehensive_data["recent_ai_issues"] = [
+                    {
+                        "id": issue["id"],
+                        "owner": issue["owner"],
+                        "repo_name": issue["repo_name"],
+                        "issue_title": issue["issue_title"],
+                        "priority": issue.get("priority"),
+                        "complexity": issue.get("complexity"),
+                        "status": issue["status"],
+                        "estimated_hours": issue.get("estimated_hours"),
+                        "created_at": issue["created_at"]
+                    }
+                    for issue in ai_issues_result.data
+                ]
+            except Exception as e:
+                print(f"Warning: Could not fetch AI issues: {e}")
+                comprehensive_data["recent_ai_issues"] = []
+            
+            # 10. AI Repositories
+            try:
+                ai_repos_result = supabase.table("ai_repositories").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(5).execute()
+                comprehensive_data["ai_repositories"] = [
+                    {
+                        "id": repo["id"],
+                        "repo_name": repo["repo_name"],
+                        "requirements": repo["requirements"],
+                        "created_files": repo["created_files"],
+                        "created_issues": repo["created_issues"],
+                        "created_at": repo["created_at"]
+                    }
+                    for repo in ai_repos_result.data
+                ]
+            except Exception as e:
+                print(f"Warning: Could not fetch AI repositories: {e}")
+                comprehensive_data["ai_repositories"] = []
+            
+            # Calculate some summary statistics
+            summary_stats = {
+                "total_analyses": len(comprehensive_data["repository_analyses"]),
+                "total_ai_issues": len(comprehensive_data["recent_ai_issues"]),
+                "total_ai_repos": len(comprehensive_data["ai_repositories"]),
+                "total_achievements": len(comprehensive_data["achievements"]),
+                "has_skills_analysis": comprehensive_data["skills_analysis"] is not None,
+                "has_resume": comprehensive_data["resume"] is not None,
+                "onboarding_complete": comprehensive_data["onboarding"]["onboarding_complete"] if comprehensive_data["onboarding"] else False
+            }
+            
+            # Return comprehensive user data
             return jsonify({
+                # Basic GitHub user info (maintained for compatibility)
                 "id": user_data["github_user_id"],
                 "login": user_data["github_username"],
                 "name": fresh_github_data.get("name") or user_data.get("github_username"),
@@ -749,9 +924,23 @@ def demo_get_user():
                 "company": fresh_github_data.get("company", ""),
                 "created_at": user_data.get("created_at"),
                 "updated_at": user_data.get("updated_at"),
-                # Additional fields from our User model
+                
+                # Database and platform-specific data
                 "database_id": user_data["id"],
-                "is_stored_user": True
+                "is_stored_user": True,
+                "platform_data": comprehensive_data,
+                "summary_stats": summary_stats,
+                
+                # Additional metadata
+                "data_freshness": {
+                    "fetched_at": datetime.now().isoformat(),
+                    "github_data_fresh": bool(fresh_github_data),
+                    "tables_queried": [
+                        "users", "user_skills_analysis", "user_progress", "user_achievements", 
+                        "user_onboarding", "user_resume", "repository_analyses", 
+                        "tech_recommendations", "leaderboard", "ai_issues", "ai_repositories"
+                    ]
+                }
             })
         else:
             # Fallback: get user data from GitHub API if not in database
@@ -763,10 +952,14 @@ def demo_get_user():
 
             github_user = user_response.json()
             github_user["is_stored_user"] = False
+            github_user["platform_data"] = {}
+            github_user["summary_stats"] = {}
             return jsonify(github_user)
             
     except Exception as e:
-        print(f"❌ Error fetching user: {str(e)}")
+        print(f"❌ Error fetching comprehensive user data: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": f"Failed to fetch user data: {str(e)}"}), 500
 
 
