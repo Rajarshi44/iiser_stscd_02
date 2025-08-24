@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/Authcontext";
 import { IconGitBranch, IconStar, IconUsers, IconCalendar, IconFlame, IconTrendingUp, IconCode, IconLock, IconWorld, IconRefresh, IconAlertCircle, IconClock } from "@tabler/icons-react";
 import GitHubContributionChart from "@/components/GitHubContributionChart";
+import { AIInsightsComponent } from "@/components/ai-insights";
+import type { DeveloperData } from "@/lib/gemini";
 
 import data from "./data.json";
 
@@ -32,6 +34,7 @@ export default function Page() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aggregatedData, setAggregatedData] = useState<DeveloperData | null>(null);
   const { user, getUserProfile, getUserRepos, getUserContributions, getUserStats, getUserActivity } = useAuth();
 
   useEffect(() => {
@@ -42,6 +45,50 @@ export default function Page() {
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
+
+  // Function to aggregate developer data for AI analysis
+  const aggregateDeveloperData = (
+    profileData: any,
+    reposData: any[],
+    contributionsData: any,
+    statsData: any
+  ): DeveloperData => {
+    return {
+      profile: {
+        login: profileData?.login || user?.login || '',
+        name: profileData?.name || user?.name,
+        bio: profileData?.bio || (user as any)?.bio,
+        location: profileData?.location || (user as any)?.location,
+        company: profileData?.company || (user as any)?.company,
+        public_repos: profileData?.public_repos || user?.public_repos || 0,
+        followers: profileData?.followers || user?.followers || 0,
+        following: profileData?.following || user?.following || 0,
+        created_at: profileData?.created_at || user?.created_at || new Date().toISOString(),
+      },
+      repositories: Array.isArray(reposData) ? reposData.map(repo => ({
+        name: repo.name || '',
+        description: repo.description || '',
+        language: repo.language || '',
+        stargazers_count: repo.stargazers_count || 0,
+        forks_count: repo.forks_count || 0,
+        created_at: repo.created_at || new Date().toISOString(),
+        updated_at: repo.updated_at || new Date().toISOString(),
+        private: repo.private || false,
+        topics: repo.topics || [],
+      })) : [],
+      contributions: {
+        total_contributions: contributionsData?.total_contributions || 0,
+        current_streak: contributionsData?.current_streak || 0,
+        longest_streak: contributionsData?.longest_streak || 0,
+        languages: contributionsData?.languages || {},
+      },
+      stats: {
+        total_commits: statsData?.total_commits || 0,
+        total_prs: statsData?.total_prs || 0,
+        total_issues: statsData?.total_issues || 0,
+      },
+    };
+  };
 
   // Enhanced data fetching with error handling and contributions
   const fetchGitHubData = async (isRefresh = false) => {
@@ -88,6 +135,10 @@ export default function Page() {
       setStats(statsData);
       setActivity(activityData);
       setLastUpdated(new Date());
+
+      // Aggregate data for AI analysis
+      const aggregated = aggregateDeveloperData(profileData, reposData, contributionsData, statsData);
+      setAggregatedData(aggregated);
       
       console.log('✅ GitHub data fetched successfully:', {
         profile: !!profileData,
@@ -428,7 +479,81 @@ export default function Page() {
                       </Card>
                     </motion.div>
                   )}
-                 
+
+                  {/* AI Insights Section */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="px-4 lg:px-6"
+                  >
+                    <AIInsightsComponent 
+                      developerData={aggregatedData}
+                      className="shadow-xl hover:shadow-purple-500/20 transition-all duration-300"
+                    />
+                  </motion.div>
+
+                  {/* Skill Development Hub Card */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    className="px-4 lg:px-6"
+                  >
+                    <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-purple-50/10 to-blue-50/10 backdrop-blur-lg border-purple-500/20">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-3 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full">
+                              <IconTrendingUp className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-xl bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                                Skill Development Hub
+                              </CardTitle>
+                              <CardDescription className="text-purple-200/80">
+                                AI-powered skill analysis and personalized learning roadmaps
+                              </CardDescription>
+                            </div>
+                          </div>
+                          <Badge className="bg-gradient-to-r from-purple-500 to-blue-600 text-white">
+                            New Feature
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <p className="text-purple-200/70">
+                            Get comprehensive insights into your skills, receive personalized learning roadmaps, 
+                            and accelerate your career development with AI-powered analysis.
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="flex items-center gap-2 text-sm text-purple-200/80">
+                              <IconCode className="w-4 h-4 text-purple-400" />
+                              <span>CV & GitHub Analysis</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-purple-200/80">
+                              <IconTrendingUp className="w-4 h-4 text-blue-400" />
+                              <span>Skill Gap Identification</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-purple-200/80">
+                              <IconFlame className="w-4 h-4 text-orange-400" />
+                              <span>Personalized Roadmaps</span>
+                            </div>
+                          </div>
+                          <div className="pt-4">
+                            <a 
+                              href="/dashboard/skilltree"
+                              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all duration-300 font-medium group-hover:scale-105 transform"
+                            >
+                              <IconTrendingUp className="w-4 h-4" />
+                              Analyze Your Skills
+                            </a>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
 
                 </motion.div>
               </div>

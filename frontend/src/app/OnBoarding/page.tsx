@@ -32,10 +32,67 @@ const roleOptions = [
 ];
 
 interface AnalysisResult {
-  skills: string[];
-  experience: string;
-  recommendations: string[];
-  roleFit: string;
+  success: boolean;
+  message: string;
+  analysis: {
+    cv_file: string;
+    target_role: string;
+    cv_text_length: number;
+    extraction_method: string;
+  };
+  skills_assessment: {
+    total_skills: number;
+    skill_categories: {
+      programming_languages: Array<{name: string; level: number; category: string}>;
+      frameworks: Array<{name: string; level: number; category: string}>;
+      databases: Array<{name: string; level: number; category: string}>;
+      cloud_platforms: Array<{name: string; level: number; category: string}>;
+      devops_tools: Array<{name: string; level: number; category: string}>;
+      ai_ml_tools: Array<{name: string; level: number; category: string}>;
+      data_analysis: Array<{name: string; level: number; category: string}>;
+      soft_skills: Array<{name: string; level: number; category: string}>;
+      other: Array<{name: string; level: number; category: string}>;
+    };
+    skill_levels: {
+      average_level: number;
+      highest_level: number;
+      lowest_level: number;
+    };
+  };
+  development_level: {
+    level: string;
+    description: string;
+    score: number;
+    confidence: string;
+  };
+  career_goals: {
+    primary_target: string;
+    industry: string;
+    experience_level: string;
+    timeline: string;
+  };
+  skill_gaps: {
+    target_role: string;
+    match_percentage: number;
+    skill_gaps: string[];
+    strengths: string[];
+    recommendations: string[];
+  };
+  learning_roadmap: {
+    total_items: number;
+    high_priority: number;
+    medium_priority: number;
+    low_priority: number;
+    roadmap_items: Array<{
+      skill: string;
+      current_level: number;
+      target_level: number;
+      priority: string;
+      estimated_time: string;
+      resources: string[];
+    }>;
+  };
+  next_steps: string[];
 }
 
 // Inline component for label input container
@@ -125,11 +182,12 @@ export default function OnBoardingPage() {
     }
 
     const formData = new FormData();
-    formData.append('cv', cvFile);
+    formData.append('cv_file', cvFile); // Backend expects 'cv_file', not 'cv'
     formData.append('target_role', targetRole === "Other" ? customRole : targetRole);
 
     const response = await fetch(`${BACKEND_URL}/api/cv/analyze`, {
       method: 'POST',
+      credentials: 'include', // Include cookies for authentication
       body: formData,
     });
 
@@ -146,6 +204,7 @@ export default function OnBoardingPage() {
     
     const response = await fetch(`${BACKEND_URL}/api/onboarding/github-analysis`, {
       method: 'POST',
+      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
       },
@@ -258,16 +317,62 @@ export default function OnBoardingPage() {
           <div className="grid md:grid-cols-2 gap-6">
             {/* Skills */}
             <div>
-              <h4 className="text-lg font-medium text-white mb-3">Key Skills Identified</h4>
-              <div className="flex flex-wrap gap-2">
-                {analysisResult.skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-green-500/20 text-green-300 text-sm rounded-full border border-green-500/30"
-                  >
-                    {skill}
+              <h4 className="text-lg font-medium text-white mb-3">
+                Key Skills Identified
+                {analysisResult?.skills_assessment?.total_skills && (
+                  <span className="ml-2 text-sm text-gray-400">
+                    ({analysisResult.skills_assessment.total_skills} total)
                   </span>
-                ))}
+                )}
+              </h4>
+              <div className="space-y-3">
+                {(() => {
+                  if (!analysisResult?.skills_assessment?.skill_categories) {
+                    return <span className="text-gray-400 text-sm">No skills identified</span>;
+                  }
+
+                  const categories = analysisResult.skills_assessment.skill_categories;
+                  const categoryColors = {
+                    programming_languages: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+                    frameworks: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+                    databases: 'bg-green-500/20 text-green-300 border-green-500/30',
+                    cloud_platforms: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+                    devops_tools: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+                    ai_ml_tools: 'bg-pink-500/20 text-pink-300 border-pink-500/30',
+                    data_analysis: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+                    soft_skills: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
+                    other: 'bg-slate-500/20 text-slate-300 border-slate-500/30'
+                  };
+
+                  return Object.entries(categories).map(([categoryKey, skills]) => {
+                    if (!Array.isArray(skills) || skills.length === 0) return null;
+                    
+                    const categoryName = categoryKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const colorClass = categoryColors[categoryKey as keyof typeof categoryColors] || categoryColors.other;
+                    
+                    return (
+                      <div key={categoryKey} className="space-y-1">
+                        <h5 className="text-sm font-medium text-gray-400">{categoryName}</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {skills.slice(0, 8).map((skill, index) => (
+                            <span
+                              key={index}
+                              className={`px-3 py-1 text-sm rounded-full border ${colorClass}`}
+                              title={`Level: ${skill.level}/5`}
+                            >
+                              {skill.name}
+                            </span>
+                          ))}
+                          {skills.length > 8 && (
+                            <span className="px-3 py-1 text-sm rounded-full border border-gray-500/30 bg-gray-500/20 text-gray-300">
+                              +{skills.length - 8} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }).filter(Boolean);
+                })()}
               </div>
             </div>
 
@@ -275,16 +380,47 @@ export default function OnBoardingPage() {
             <div>
               <h4 className="text-lg font-medium text-white mb-3">Role Fit</h4>
               <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-gray-300">{analysisResult.roleFit}</p>
+                <div className="space-y-2">
+                  <p className="text-gray-300">
+                    <span className="font-medium text-white">Match: </span>
+                    {analysisResult?.skill_gaps?.match_percentage || 0}%
+                  </p>
+                  <p className="text-gray-300">
+                    <span className="font-medium text-white">Level: </span>
+                    {analysisResult?.development_level?.level || 'Not assessed'}
+                  </p>
+                  <p className="text-gray-300 text-sm">
+                    {analysisResult?.development_level?.description || 'No description available'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Experience Summary */}
           <div className="mt-6">
-            <h4 className="text-lg font-medium text-white mb-3">Experience Summary</h4>
+            <h4 className="text-lg font-medium text-white mb-3">Development Level</h4>
             <div className="bg-slate-800/50 rounded-lg p-4">
-              <p className="text-gray-300">{analysisResult.experience}</p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-medium">Overall Score:</span>
+                  <span className="text-lg font-bold text-green-400">
+                    {analysisResult?.development_level?.score || 0}/5
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Average Skill Level</span>
+                    <span className="text-gray-300">{analysisResult?.skills_assessment?.skill_levels?.average_level || 0}</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(analysisResult?.development_level?.score || 0) * 20}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -292,7 +428,7 @@ export default function OnBoardingPage() {
           <div className="mt-6">
             <h4 className="text-lg font-medium text-white mb-3">Recommendations</h4>
             <ul className="space-y-2">
-              {analysisResult.recommendations.map((rec, index) => (
+              {(analysisResult?.skill_gaps?.recommendations || analysisResult?.next_steps || []).map((rec, index) => (
                 <li key={index} className="flex items-start gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></span>
                   <span className="text-gray-300">{rec}</span>

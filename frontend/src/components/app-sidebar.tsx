@@ -30,13 +30,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/Authcontext";
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
+const staticData = {
   navMain: [
     {
       title: "Leaderboard",
@@ -144,6 +140,28 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, isAuthenticated } = useAuth();
+
+  // Create user data for sidebar - use logged-in user or fallback
+  const userData = user ? {
+    name: user.name || user.login || "GitHub User",
+    email: user.email || `${user.login}@github.com`,
+    avatar: user.avatar_url || "/avatars/default.jpg",
+  } : {
+    name: "Not signed in",
+    email: "Please sign in",
+    avatar: "/avatars/default.jpg",
+  };
+
+  // Show different navigation based on authentication status
+  const navItems = isAuthenticated ? staticData.navMain : [
+    {
+      title: "Sign In",
+      url: "/login",
+      icon: IconUser,
+    }
+  ];
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -162,12 +180,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navItems} />
+        {isAuthenticated && (
+          <>
+            <NavDocuments items={staticData.documents} />
+            <NavSecondary items={staticData.navSecondary} className="mt-auto" />
+          </>
+        )}
+        {!isAuthenticated && (
+          <div className="px-3 py-2 text-xs text-muted-foreground">
+            Sign in to access all features
+          </div>
+        )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   );

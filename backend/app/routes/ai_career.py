@@ -74,85 +74,126 @@ def _fallback_extract_skills(cv_text):
     """Fallback skill extraction when agent is not available"""
     skills = []
     
-    # Basic skill extraction from text
+    # Enhanced skill extraction from text
     skill_keywords = {
-        "programming": ["python", "javascript", "java", "c++", "c#", "go", "rust", "php", "ruby", "swift", "kotlin"],
-        "frontend": ["react", "angular", "vue", "html", "css", "sass", "typescript", "jquery", "bootstrap"],
-        "backend": ["node.js", "django", "flask", "express", "spring", "asp.net", "laravel", "rails"],
-        "database": ["mysql", "postgresql", "mongodb", "redis", "sql", "oracle", "sqlite"],
-        "cloud": ["aws", "azure", "gcp", "heroku", "digitalocean", "docker", "kubernetes"],
-        "devops": ["git", "jenkins", "ci/cd", "terraform", "ansible", "prometheus", "grafana"],
-        "ai_ml": ["tensorflow", "pytorch", "scikit-learn", "machine learning", "deep learning", "nlp"],
-        "data": ["pandas", "numpy", "matplotlib", "seaborn", "tableau", "powerbi", "excel"]
+        "programming_languages": ["python", "javascript", "java", "c++", "c#", "go", "rust", "php", "ruby", "swift", "kotlin", "scala", "r", "matlab"],
+        "frameworks": ["react", "angular", "vue", "html", "css", "sass", "typescript", "jquery", "bootstrap", "tailwind", "node.js", "django", "flask", "express", "spring", "asp.net", "laravel", "rails", "next.js", "nuxt"],
+        "databases": ["mysql", "postgresql", "mongodb", "redis", "sql", "oracle", "sqlite", "cassandra", "elasticsearch", "firebase"],
+        "cloud_platforms": ["aws", "azure", "gcp", "heroku", "digitalocean", "vercel", "netlify"],
+        "devops_tools": ["docker", "kubernetes", "git", "jenkins", "ci/cd", "terraform", "ansible", "prometheus", "grafana", "gitlab", "github actions"],
+        "ai_ml_tools": ["tensorflow", "pytorch", "scikit-learn", "machine learning", "deep learning", "nlp", "opencv", "pandas", "numpy"],
+        "data_analysis": ["matplotlib", "seaborn", "tableau", "powerbi", "excel", "jupyter", "plotly", "d3.js"],
+        "soft_skills": ["leadership", "teamwork", "communication", "project management", "agile", "scrum"]
     }
     
     cv_lower = cv_text.lower()
+    found_skills = set()  # Avoid duplicates
     
     for category, keywords in skill_keywords.items():
         for keyword in keywords:
-            if keyword in cv_lower:
-                # Estimate skill level based on context
-                level = 2  # Default to beginner
-                if any(word in cv_lower for word in ["expert", "advanced", "senior", "lead"]):
+            if keyword.lower() in cv_lower and keyword not in found_skills:
+                found_skills.add(keyword)
+                
+                # Estimate skill level based on context around the keyword
+                context_start = max(0, cv_lower.find(keyword.lower()) - 100)
+                context_end = min(len(cv_lower), cv_lower.find(keyword.lower()) + len(keyword) + 100)
+                context = cv_lower[context_start:context_end]
+                
+                level = 2  # Default to intermediate
+                if any(word in context for word in ["expert", "advanced", "senior", "lead", "architect", "5+ years", "extensive"]):
                     level = 4
-                elif any(word in cv_lower for word in ["intermediate", "mid-level", "experienced"]):
+                elif any(word in context for word in ["experienced", "proficient", "skilled", "3+ years", "solid"]):
                     level = 3
-                elif any(word in cv_lower for word in ["beginner", "learning", "studying"]):
+                elif any(word in context for word in ["beginner", "learning", "basic", "familiar", "exposure"]):
                     level = 1
+                elif any(word in context for word in ["intermediate", "working knowledge", "hands-on"]):
+                    level = 2
+                else:
+                    # Check for project or professional context
+                    if any(word in context for word in ["project", "developed", "built", "implemented", "designed"]):
+                        level = 3
                 
                 skills.append({
-                    "name": keyword.title(),
+                    "name": keyword.title().replace(".", ".").replace("_", " "),
                     "level": level,
                     "category": category,
-                    "description": f"Extracted from CV text"
+                    "description": f"Extracted from CV context"
                 })
     
-    # If no skills found, add generic ones
+    # If no skills found, add some generic ones based on CV content
     if not skills:
-        skills = [
-            {"name": "General Programming", "level": 2, "category": "programming", "description": "Basic programming knowledge"},
-            {"name": "Problem Solving", "level": 2, "category": "soft_skills", "description": "Analytical thinking"}
-        ]
+        if any(word in cv_lower for word in ["developer", "programmer", "engineer", "software"]):
+            skills.extend([
+                {"name": "Software Development", "level": 2, "category": "programming_languages", "description": "General development skills"},
+                {"name": "Problem Solving", "level": 3, "category": "soft_skills", "description": "Analytical thinking"},
+                {"name": "Programming", "level": 2, "category": "programming_languages", "description": "Basic programming knowledge"}
+            ])
+        else:
+            skills.extend([
+                {"name": "Communication", "level": 3, "category": "soft_skills", "description": "Professional communication"},
+                {"name": "Teamwork", "level": 3, "category": "soft_skills", "description": "Collaborative work"}
+            ])
     
-    return skills
+    return skills[:15]  # Limit to 15 most relevant skills
 
 def _fallback_skill_analysis(target_role):
     """Fallback skill analysis when agent is not available"""
+    role_specific_gaps = {
+        "frontend_developer": ["Advanced React/Vue", "State management", "Testing frameworks", "Build tools"],
+        "backend_developer": ["API design", "Database optimization", "Microservices", "Security practices"],
+        "full_stack_developer": ["Full-stack architecture", "DevOps basics", "Database design", "API integration"],
+        "devops_engineer": ["Container orchestration", "CI/CD pipelines", "Infrastructure as Code", "Monitoring"],
+        "data_scientist": ["Advanced statistics", "ML model deployment", "Data visualization", "Big data tools"],
+        "software_engineer": ["System design", "Code optimization", "Testing strategies", "Documentation"]
+    }
+    
+    role_key = target_role.lower().replace(" ", "_")
+    gaps = role_specific_gaps.get(role_key, role_specific_gaps["software_engineer"])
+    
     return {
-        "skill_gaps": ["Advanced frameworks", "Cloud deployment", "Testing methodologies"],
-        "match_percentage": 60,
-        "strengths": ["Basic programming", "Problem solving"],
-        "recommendations": ["Learn modern frameworks", "Practice cloud deployment", "Improve testing skills"]
+        "skill_gaps": gaps,
+        "match_percentage": 65,
+        "strengths": ["Problem solving", "Learning ability", "Technical foundation"],
+        "recommendations": [
+            f"Focus on {target_role.replace('_', ' ').title()}-specific skills",
+            "Build practical projects",
+            "Practice with real-world scenarios",
+            "Seek mentorship and code reviews"
+        ]
     }
 
 def _fallback_generate_roadmap(target_role):
     """Fallback roadmap generation when agent is not available"""
-    return [
-        {
-            "skill": "Modern Frameworks",
-            "current_level": 1,
-            "target_level": 3,
-            "priority": "high",
-            "estimated_time": "3-6 months",
-            "resources": ["Official documentation", "Online courses", "Practice projects"]
-        },
-        {
-            "skill": "Testing & Quality",
-            "current_level": 1,
-            "target_level": 3,
-            "priority": "medium",
-            "estimated_time": "2-4 months",
-            "resources": ["Testing frameworks", "Best practices", "Real project testing"]
-        },
-        {
-            "skill": "Cloud Deployment",
-            "current_level": 1,
-            "target_level": 2,
-            "priority": "medium",
-            "estimated_time": "2-3 months",
-            "resources": ["Cloud platforms", "Containerization", "CI/CD pipelines"]
-        }
-    ]
+    role_specific_roadmaps = {
+        "frontend_developer": [
+            {"skill": "React/Vue Mastery", "current_level": 2, "target_level": 4, "priority": "high", "estimated_time": "3-4 months", "resources": ["React docs", "Vue guide", "Component patterns"]},
+            {"skill": "State Management", "current_level": 1, "target_level": 3, "priority": "high", "estimated_time": "2-3 months", "resources": ["Redux", "Vuex", "Context API"]},
+            {"skill": "Testing Frontend", "current_level": 1, "target_level": 3, "priority": "medium", "estimated_time": "2-3 months", "resources": ["Jest", "Testing Library", "Cypress"]},
+            {"skill": "Build Tools", "current_level": 2, "target_level": 3, "priority": "medium", "estimated_time": "1-2 months", "resources": ["Webpack", "Vite", "Module bundlers"]}
+        ],
+        "backend_developer": [
+            {"skill": "API Design", "current_level": 2, "target_level": 4, "priority": "high", "estimated_time": "2-3 months", "resources": ["REST principles", "GraphQL", "API versioning"]},
+            {"skill": "Database Optimization", "current_level": 1, "target_level": 3, "priority": "high", "estimated_time": "3-4 months", "resources": ["SQL optimization", "Indexing", "Query profiling"]},
+            {"skill": "Security Practices", "current_level": 1, "target_level": 3, "priority": "medium", "estimated_time": "2-3 months", "resources": ["OWASP", "Authentication", "Data protection"]},
+            {"skill": "Microservices", "current_level": 1, "target_level": 2, "priority": "medium", "estimated_time": "3-4 months", "resources": ["Service architecture", "Communication patterns", "Deployment"]}
+        ],
+        "full_stack_developer": [
+            {"skill": "Full-Stack Architecture", "current_level": 2, "target_level": 4, "priority": "high", "estimated_time": "4-6 months", "resources": ["System design", "Architecture patterns", "Scalability"]},
+            {"skill": "DevOps Fundamentals", "current_level": 1, "target_level": 3, "priority": "medium", "estimated_time": "3-4 months", "resources": ["Docker", "CI/CD", "Cloud basics"]},
+            {"skill": "Database Design", "current_level": 2, "target_level": 3, "priority": "medium", "estimated_time": "2-3 months", "resources": ["Normalization", "NoSQL vs SQL", "Data modeling"]},
+            {"skill": "API Integration", "current_level": 2, "target_level": 4, "priority": "high", "estimated_time": "2-3 months", "resources": ["REST APIs", "GraphQL", "Authentication"]}
+        ]
+    }
+    
+    role_key = target_role.lower().replace(" ", "_")
+    roadmap = role_specific_roadmaps.get(role_key, [
+        {"skill": "Core Programming", "current_level": 2, "target_level": 4, "priority": "high", "estimated_time": "3-4 months", "resources": ["Best practices", "Design patterns", "Code quality"]},
+        {"skill": "System Design", "current_level": 1, "target_level": 3, "priority": "medium", "estimated_time": "4-6 months", "resources": ["Architecture", "Scalability", "Performance"]},
+        {"skill": "Testing & Quality", "current_level": 1, "target_level": 3, "priority": "medium", "estimated_time": "2-3 months", "resources": ["Unit testing", "Integration testing", "TDD"]},
+        {"skill": "Modern Tools", "current_level": 2, "target_level": 3, "priority": "medium", "estimated_time": "2-3 months", "resources": ["Version control", "Build tools", "Development environment"]}
+    ])
+    
+    return roadmap
 
 @bp.route("/api/onboarding/cv-analysis", methods=["POST"])
 @token_required
@@ -282,13 +323,18 @@ def cv_analysis_onboarding(current_user_id):
         return jsonify({"error": f"Onboarding failed: {str(e)}"}), 500
 
 @bp.route("/api/onboarding/github-analysis", methods=["POST"])
-@token_required
-def github_skill_analysis(current_user_id):
+def github_skill_analysis():
     """Analyze user skills based on GitHub profile when CV is not provided"""
     try:
+        # Get current user ID from either JWT or cookie auth
+        current_user_id = get_user_id_from_request()
+        if not current_user_id:
+            return jsonify({"error": "Authentication required"}), 401
+        
         # Get form data
-        target_role = request.form.get('target_role', 'software_engineer')
-        github_username = request.form.get('github_username')
+        data = request.get_json()
+        target_role = data.get('target_role', 'software_engineer')
+        github_username = data.get('github_username')
         
         if not github_username:
             return jsonify({"error": "GitHub username is required"}), 400
@@ -828,11 +874,42 @@ def get_level_requirements(current_user_id):
     except Exception as e:
         return jsonify({"error": f"Failed to get level requirements: {str(e)}"}), 500 
 
+def get_user_id_from_request():
+    """Extract user ID from either JWT token or cookie-based auth"""
+    # Try JWT token first
+    token = request.headers.get("Authorization")
+    if token:
+        try:
+            token = token.replace("Bearer ", "")
+            from ..config import Config
+            import jwt
+            data = jwt.decode(token, Config.JWT_SECRET, algorithms=["HS256"])
+            return data["user_id"]
+        except Exception:
+            pass
+    
+    # Fall back to cookie-based auth
+    github_token = request.cookies.get("github_token")
+    if github_token:
+        try:
+            # Look up user by GitHub access token
+            user_result = supabase.table("users").select("id").eq("github_access_token", github_token).execute()
+            if user_result.data:
+                return user_result.data[0]["id"]
+        except Exception:
+            pass
+    
+    return None
+
 @bp.route("/api/cv/analyze", methods=["POST"])
-@token_required
-def comprehensive_cv_analysis(current_user_id):
+def comprehensive_cv_analysis():
     """Comprehensive CV analysis using CVAnalysisAgent from main.py"""
     try:
+        # Get current user ID from either JWT or cookie auth
+        current_user_id = get_user_id_from_request()
+        if not current_user_id:
+            return jsonify({"error": "Authentication required"}), 401
+        
         # Get form data
         target_role = request.form.get('target_role', 'software_engineer')
         
@@ -856,36 +933,61 @@ def comprehensive_cv_analysis(current_user_id):
         cv_file.save(file_path)
         
         # Import and initialize CVAnalysisAgent from main.py
+        agent = None
         try:
             import sys
-            agent_path = Path(__file__).parent.parent.parent / "agents" / "agent-1"
-            sys.path.append(str(agent_path))
+            # Try multiple possible paths for the agent
+            possible_paths = [
+                Path(__file__).parent.parent.parent / "agents" / "agent-1",
+                Path(__file__).parent.parent.parent.parent / "agents" / "agent-1",
+                Path.cwd() / "agents" / "agent-1"
+            ]
             
-            from main import CVAnalysisAgent
+            agent_imported = False
+            for agent_path in possible_paths:
+                if agent_path.exists():
+                    try:
+                        sys.path.insert(0, str(agent_path))
+                        from main import CVAnalysisAgent
+                        agent_imported = True
+                        print(f"✅ CVAnalysisAgent imported from {agent_path}")
+                        break
+                    except ImportError:
+                        continue
+                    finally:
+                        # Clean up sys.path to avoid conflicts
+                        if str(agent_path) in sys.path:
+                            sys.path.remove(str(agent_path))
             
-            # Initialize the agent with environment variables
-            groq_api_key = os.getenv('GROQ_API_KEY')
-            supabase_url = os.getenv('SUPABASE_URL')
-            supabase_key = os.getenv('SUPABASE_ANON_KEY')
-            
-            if not groq_api_key:
-                print("⚠️ GROQ_API_KEY not configured, using fallback analysis")
-                # Continue with fallback analysis instead of failing
+            if not agent_imported:
+                print("⚠️ CVAnalysisAgent not found in any expected path, using fallback analysis")
                 agent = None
             else:
-                # Create agent instance
-                agent = CVAnalysisAgent(
-                    gemini_api_key=groq_api_key,  # Using groq_api_key for compatibility
-                    supabase_url=supabase_url,
-                    supabase_key=supabase_key
-                )
-                print(f"✅ CVAnalysisAgent initialized for user {current_user_id}")
+                # Initialize the agent with environment variables
+                groq_api_key = os.getenv('GROQ_API_KEY')
+                gemini_api_key = os.getenv('GEMINI_API_KEY')  # Try Gemini key as well
+                supabase_url = os.getenv('SUPABASE_URL')
+                supabase_key = os.getenv('SUPABASE_ANON_KEY')
+                
+                api_key = groq_api_key or gemini_api_key
+                if not api_key:
+                    print("⚠️ No API key (GROQ_API_KEY or GEMINI_API_KEY) configured, using fallback analysis")
+                    agent = None
+                else:
+                    try:
+                        # Create agent instance
+                        agent = CVAnalysisAgent(
+                            gemini_api_key=api_key,
+                            supabase_url=supabase_url,
+                            supabase_key=supabase_key
+                        )
+                        print(f"✅ CVAnalysisAgent initialized for user {current_user_id}")
+                    except Exception as init_error:
+                        print(f"⚠️ Failed to initialize CVAnalysisAgent: {init_error}, using fallback")
+                        agent = None
             
-        except ImportError as e:
-            print(f"⚠️ Failed to import CVAnalysisAgent: {str(e)}, using fallback analysis")
-            agent = None
         except Exception as e:
-            print(f"⚠️ Failed to initialize agent: {str(e)}, using fallback analysis")
+            print(f"⚠️ Failed to import CVAnalysisAgent: {str(e)}, using fallback analysis")
             agent = None
         
         # Step 1: Parse CV file
@@ -953,25 +1055,20 @@ def comprehensive_cv_analysis(current_user_id):
             print("⚠️ Agent not available, using fallback roadmap")
             roadmap = _fallback_generate_roadmap(target_role)
         
-        # Step 5: Create test user and store in database
-        print("🗄️ Creating user and storing analysis...")
-        try:
-            user_id = agent.create_test_user(f"user_{current_user_id}", f"user{current_user_id}@example.com")
-            if user_id:
-                try:
-                    success = agent.store_analysis_to_database(target_role)
-                    if success:
-                        print("✅ Analysis stored in database")
-                    else:
-                        print("⚠️ Failed to store in database, continuing with analysis")
-                except Exception as e:
-                    print(f"⚠️ Database storage failed: {e}, continuing with analysis")
-            else:
-                print("⚠️ Failed to create test user, continuing with analysis")
-                user_id = current_user_id  # Use current user ID as fallback
-        except Exception as e:
-            print(f"⚠️ User creation failed: {e}, using current user ID")
-            user_id = current_user_id  # Use current user ID as fallback
+        # Step 5: Use current user ID (no need for test user creation)
+        print("🗄️ Using current authenticated user...")
+        user_id = current_user_id
+        
+        # Try to store analysis using agent if available
+        if agent:
+            try:
+                success = agent.store_analysis_to_database(target_role)
+                if success:
+                    print("✅ Analysis stored in database via agent")
+                else:
+                    print("⚠️ Agent database storage failed, will store manually")
+            except Exception as e:
+                print(f"⚠️ Agent database storage failed: {e}, will store manually")
         
         # Step 6: Prepare comprehensive response
         print("📋 Preparing analysis response...")
@@ -1073,8 +1170,7 @@ def comprehensive_cv_analysis(current_user_id):
             "uploaded_cv_url": file_path,
             "target_role": target_role,
             "chosen_path": "auto_generated",
-            "onboarding_complete": True,
-            "analysis_method": "CVAnalysisAgent Integration"
+            "onboarding_complete": True
         }
         
         try:
